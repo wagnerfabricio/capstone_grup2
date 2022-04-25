@@ -1,1 +1,3 @@
 from .hello_world_model import HelloWorld
+from .user_class_model import UserClassModel
+from .user_model import UserModel
