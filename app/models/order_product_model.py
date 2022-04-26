@@ -14,7 +14,7 @@ class OrderProduct(db.Model):
     discount: float
     sub_total: float
 
-    __tablename__ = "order_products"
+    __tablename__ = "orders_products"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     product_quantity = Column(Integer, default=1)

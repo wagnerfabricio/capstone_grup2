@@ -13,7 +13,7 @@ class OrderRating(db.Model):
     nota: int
     comment: str
 
-    __tablename__ = "order_ratings"
+    __tablename__ = "orders_ratings"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     nota = Column(Integer, nullable=False)

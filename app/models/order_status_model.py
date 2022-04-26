@@ -12,7 +12,7 @@ class OrderStatus(db.Model):
     id: str
     type: str
 
-    __tablename__ = "order_status"
+    __tablename__ = "orders_status"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     type = Column(String(30), nullable=False)
