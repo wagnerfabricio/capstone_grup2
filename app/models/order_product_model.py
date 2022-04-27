@@ -12,14 +12,14 @@ class OrderProduct(db.Model):
     id: str
     product_quantity: int
     discount: float
-    sub_total: float
+    total: float
 
     __tablename__ = "orders_products"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     product_quantity = Column(Integer, default=1)
-    discount = Column(Numeric, default=0)
-    sub_total = Column(Numeric)
+    discount = Column(Numeric(asdecimal=False), default=0)
+    total = Column(Numeric(asdecimal=False))
 
     order_id = Column(UUID(as_uuid=True), ForeignKey("orders.id"), nullable=False)
     ## Está comentada pois ainda não existe a tabela products

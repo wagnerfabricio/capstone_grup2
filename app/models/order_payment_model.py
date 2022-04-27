@@ -21,4 +21,4 @@ class OrderPayment(db.Model):
     status = Column(String(60), nullable=False)
     order_id = Column(String, ForeignKey("orders.id"), nullable=False)
 
-    orders = relationship("Order", backref=backref("payment", uselist=False))
+    # orders = relationship("Order", backref=backref("payment", uselist=False))
