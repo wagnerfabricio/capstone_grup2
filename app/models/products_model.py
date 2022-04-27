@@ -19,14 +19,20 @@ class Products(db.Model):
 
     __tablename__ = "products"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = db.Column(
+        # UUID(as_uuid=True), 
+        Integer,primary_key=True
+        # , default=uuid4
+        )
     name = Column(String(50), unique=True, nullable=False)
     description = Column(String)
     price = Column(Numeric(asdecimal=False), nullable=False)
     active = Column(Boolean)
     qtt_stock = Column(Integer)
 
-    category_id = db.Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))
+    category_id = db.Column(
+        # UUID(as_uuid=True), 
+        Integer,db.ForeignKey("categories.id"))
 
     category = db.relationship("Categories", back_populates="product", uselist=False)
 

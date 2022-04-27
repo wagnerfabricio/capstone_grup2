@@ -18,12 +18,16 @@ class UserModel(db.Model):
 
     __tablename__ = "users"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = db.Column(
+        # UUID(as_uuid=True),
+     db.Integer,primary_key=True
+    #  , default=uuid4
+     )
     email = db.Column(db.String(64), nullable=False, unique=True)
     password_hash = db.Column(db.String)
     name = db.Column(db.String(100), nullable=False)
     # address_id = db.Column(db.Integer, db.ForeignKey("address.id"))
-    user_class = db.Column(UUID(as_uuid=True), db.ForeignKey("users_classes.id"))
+    # user_class = db.Column(UUID(as_uuid=True), db.ForeignKey("users_classes.id"))
 
     # orders = db.relationship('OrderModel')
 
