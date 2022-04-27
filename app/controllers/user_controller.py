@@ -5,6 +5,7 @@ from app.models.user_model import UserModel
 from app.configs.database import db
 from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation, NotNullViolation
+from app.services import retrieve_orders_user
 
 from datetime import timedelta
 
@@ -27,10 +28,10 @@ def create_user():
                 .replace(")", " ")
                 .replace("\n", "")
             }, HTTPStatus.CONFLICT
-        
-        print('='*100)
+
+        print("=" * 100)
         print(e.orig)
-        print('='*100)
+        print("=" * 100)
 
         if isinstance(e.orig, NotNullViolation):
 
@@ -78,3 +79,9 @@ def signin():
             },
         }
     }, HTTPStatus.OK
+
+
+def retrieve_orders():
+    orders = retrieve_orders_user()
+
+    return jsonify(orders), HTTPStatus.OK

@@ -4,7 +4,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.models.user_model import UserModel
 from app.models.user_class_model import UserClassModel
 from os import getenv
-
+from app.services import retrieve_orders_admin, retrieve_orders_detail
 
 # ----------------------------------- USERS ---------------------------------- #
 @jwt_required()
@@ -108,3 +108,28 @@ def delete_user_by_id(user_id: str):
 
 
 # ---------------------------------- ORDERS ---------------------------------- #
+@jwt_required()
+def retrieve_orders():
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
+
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        orders = retrieve_orders_admin()
+
+        return jsonify(orders), HTTPStatus.OK
+        ...
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
+
+
+def retrieve_order_detail(order_id: int):
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
+
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        order = retrieve_orders_detail(order_id)
+
+        return jsonify(order), HTTPStatus.OK
