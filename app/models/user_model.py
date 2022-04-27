@@ -17,19 +17,18 @@ class UserModel(db.Model):
     name: str
 
     __tablename__ = "users"
+    expected_keys = {"name", "email", "password"}
 
-    id = db.Column(
-        # UUID(as_uuid=True),
-     db.Integer,primary_key=True
-    #  , default=uuid4
-     )
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     email = db.Column(db.String(64), nullable=False, unique=True)
     password_hash = db.Column(db.String)
     name = db.Column(db.String(100), nullable=False)
+    birthday = db.Column(db.DateTime)
     # address_id = db.Column(db.Integer, db.ForeignKey("address.id"))
-    # user_class = db.Column(UUID(as_uuid=True), db.ForeignKey("users_classes.id"))
+    user_class = db.Column(UUID(as_uuid=True), db.ForeignKey("users_classes.id"))
 
-    # orders = db.relationship('OrderModel')
+    # orders = db.relationship('OrderModel', backref=db.backref('users', uselist=False))
+    # cart = db.relationship('CartModel', backref=db.backref('users', uselist=False))
 
     @validates("email")
     def validate_email(self, key, email_to_be_validated):
@@ -52,7 +51,7 @@ class UserModel(db.Model):
     def password(self, password_to_hash):
         if not password_to_hash or len(password_to_hash) < 4:
             raise InvalidPasswordError(
-                "Field password must be at least 4 characters long" #todo: mudar para 8 no projeto final!
+                "Field password must be at least 4 characters long"  # todo: mudar para 8 no projeto final!
             )
 
         self.password_hash = generate_password_hash(password_to_hash)
