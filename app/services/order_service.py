@@ -21,26 +21,6 @@ def retrieve_orders_admin():
 
 
 def retrieve_orders_detail(id):
-    """
-    SELECT
-        u."name",u."email",
-        p."name",p."price",
-        o."total",
-        os."type",
-        opy."payment",
-        op."product_quantity"
-    FROM orders o
-    JOIN orders_products op
-        ON o.id = op.order_id
-    JOIN orders_status os
-        on os.id = o.status_id
-    JOIN orders_payments opy
-        on opy.id = o.payment_id
-    JOIN products p
-        ON p.id = op.product_id
-    WHERE
-        o.id = {id}
-    """
 
     session = current_app.db.session
 
@@ -48,8 +28,6 @@ def retrieve_orders_detail(id):
         session.query(
             OrderProduct.total,
             OrderProduct.product_quantity,
-            # Order.id,
-            # Order.total,
             Products.name,
         )
         .select_from(Order)
@@ -65,8 +43,8 @@ def retrieve_orders_detail(id):
             UserModel.email,
             Order.id,
             Order.total,
-            OrderStatus.type,
-            OrderPayment.status,
+            OrderStatus.type.label("status"),
+            OrderPayment.type.label("payment"),
         )
         .select_from(Order)
         .join(UserModel)
@@ -76,14 +54,12 @@ def retrieve_orders_detail(id):
         .first()
     )
 
-    print("USER", user_query)
-    print("QUERY", order_product_query)
-
+    order_user = user_query._asdict()
     orders_products = [item._asdict() for item in order_product_query]
 
-    # user = retrieve_by_id(UserModel,)
+    response = {**order_user, "products": orders_products}
 
-    return {}
+    return response
 
 
 def retrieve_orders_user():
