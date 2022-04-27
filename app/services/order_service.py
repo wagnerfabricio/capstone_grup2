@@ -2,8 +2,9 @@ from dataclasses import asdict
 
 from flask import current_app
 from sqlalchemy.orm import Session, Query
-from app.models import Order, OrderStatus, OrderPayment,UserModel
+from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
 from app.models.order_product_model import OrderProduct
+from .query_service import retrieve_by_id
 
 
 def retrieve_orders_admin():
@@ -43,30 +44,46 @@ def retrieve_orders_detail(id):
 
     session = current_app.db.session
 
-    query: Query = (
+    order_product_query: Query = (
         session.query(
-            "Product".id,
-            "Product".name,
             OrderProduct.total,
             OrderProduct.product_quantity,
-            Order.id,
-            Order.total,
-            OrderStatus.type,
-            OrderPayment.type,
-            OrderPayment.status,
+            # Order.id,
+            # Order.total,
+            Products.name,
         )
         .select_from(Order)
         .join(OrderProduct)
+        .join(Products)
+        .filter(Order.id == id)
+        .all()
+    )
+
+    user_query: Query = (
+        session.query(
+            UserModel.name,
+            UserModel.email,
+            Order.id,
+            Order.total,
+            OrderStatus.type,
+            OrderPayment.status,
+        )
+        .select_from(Order)
+        .join(UserModel)
         .join(OrderStatus)
         .join(OrderPayment)
-        .join("Product")
         .filter(Order.id == id)
         .first()
     )
 
-    # response = [item._asdict() for item in query]
+    print("USER", user_query)
+    print("QUERY", order_product_query)
 
-    return query
+    orders_products = [item._asdict() for item in order_product_query]
+
+    # user = retrieve_by_id(UserModel,)
+
+    return {}
 
 
 def retrieve_orders_user():
@@ -74,6 +91,9 @@ def retrieve_orders_user():
 
     orders = session.query(Order).all()
 
-    list_orders = [{**asdict(order), "payment": order.payment} for order in orders]
+    list_orders = [
+        {"id": order.id, "status": order.status.type, "payment": order.payment.type}
+        for order in orders
+    ]
 
     return list_orders
