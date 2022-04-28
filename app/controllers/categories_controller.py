@@ -4,6 +4,10 @@ from app.models.categories import Categories
 from app.configs.database import db
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm import Query
+from werkzeug.exceptions import NotFound
+from flask_sqlalchemy import BaseQuery
+from sqlalchemy.exc import DataError
+from psycopg2.errors import InvalidTextRepresentation
 
 def create_categories():
     try:
@@ -51,3 +55,69 @@ def retrieve_categories():
         return jsonify(records), HTTPStatus.OK
     except:
         return {"error": "no data found"}, HTTPStatus.NOT_FOUND
+
+def retrieve_categories_by_id(id):
+    base_query: Query = db.session.query(Categories)
+
+    record_query: BaseQuery = base_query.filter_by(id=id)
+
+    try:
+        record = record_query.first_or_404(description="id not found")
+
+    except NotFound as e:
+        return {"error": e.description}, HTTPStatus.NOT_FOUND
+
+    except DataError as e:
+        if isinstance(e.orig, InvalidTextRepresentation):
+            return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+
+        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+
+    return jsonify(record), HTTPStatus.OK
+
+def update_category(id):
+    try:
+        data = request.get_json()
+
+        session: Session = db.session
+
+        record = session.query(Categories).get(id)
+
+        if not record:
+            return {"error": "id not found"}, HTTPStatus.NOT_FOUND
+
+        for key, value in data.items():
+            setattr(record, key, value)
+
+        session.commit()
+
+        return jsonify(record), HTTPStatus.OK
+
+    except DataError as e:
+        if isinstance(e.orig, InvalidTextRepresentation):
+            return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+
+        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+        
+def delete_category(id):
+    try:
+        session: Session = db.session
+
+        record = session.query(Categories).get(id)
+
+        if not record:
+            return {"error": "id not found"}, HTTPStatus.NOT_FOUND
+
+        session.delete(record)
+        session.commit()
+
+        return "", HTTPStatus.NO_CONTENT
+
+    except DataError as e:
+        if isinstance(e.orig, InvalidTextRepresentation):
+            return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+
+        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+
+
+    
