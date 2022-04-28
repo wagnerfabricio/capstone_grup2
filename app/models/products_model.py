@@ -11,6 +11,7 @@ from uuid import uuid4
 @dataclass
 class Products(db.Model):
 
+    id: str
     name: str
     description: str
     price: str
