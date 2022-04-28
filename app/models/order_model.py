@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
+from datetime import datetime as dt
+
 from app.configs.database import db
-from sqlalchemy import Column, ForeignKey, Date, Numeric,Integer
+from sqlalchemy import Column, ForeignKey, Date, Numeric, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, backref
 
@@ -17,26 +19,19 @@ class Order(db.Model):
 
     __tablename__ = "orders"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
 
-    # Está comentada pois ainda nao existe a tabela users
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    date = Column(Date)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    date = Column(Date, default=dt.now())
     subtotal = Column(Numeric(asdecimal=False))
     total = Column(Numeric(asdecimal=False))
-    
+
     status_id = Column(
-        # UUID(as_uuid=True),
-         Integer,
-         ForeignKey("orders_status.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False
     )
-    rating_id = Column(
-        # UUID(as_uuid=True),
-         Integer,ForeignKey("orders_ratings.id"), nullable=False
-    )
+    rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"))
     payment_id = Column(
-        # UUID(as_uuid=True),
-         Integer,ForeignKey("orders_payments.id"), nullable=False
+        UUID(as_uuid=True), ForeignKey("orders_payments.id"), nullable=False
     )
 
     user = relationship(

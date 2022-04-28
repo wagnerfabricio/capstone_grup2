@@ -26,8 +26,8 @@ def retrieve_orders_detail(id):
 
     order_product_query: Query = (
         session.query(
-            OrderProduct.total,
-            OrderProduct.product_quantity,
+            OrderProduct.sale_value,
+            OrderProduct.id,
             Products.name,
         )
         .select_from(Order)
