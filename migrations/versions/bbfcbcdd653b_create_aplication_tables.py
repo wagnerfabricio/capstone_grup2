@@ -1,8 +1,8 @@
 """create aplication tables
 
-Revision ID: 40fa34c8d368
+Revision ID: bbfcbcdd653b
 Revises: 
-Create Date: 2022-04-28 08:33:32.240259
+Create Date: 2022-04-28 09:07:00.698323
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '40fa34c8d368'
+revision = 'bbfcbcdd653b'
 down_revision = None
 branch_labels = None
 depends_on = None
