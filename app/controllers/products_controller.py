@@ -19,6 +19,7 @@ def create_products():
                 "price",
                 "active",
                 "qtt_stock",
+                "category_id"
             ]
 
         for key in data_keys:

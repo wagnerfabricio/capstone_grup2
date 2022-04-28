@@ -29,10 +29,6 @@ def create_user():
                 .replace("\n", "")
             }, HTTPStatus.CONFLICT
 
-        print("=" * 100)
-        print(e.orig)
-        print("=" * 100)
-
         if isinstance(e.orig, NotNullViolation):
 
             expected = UserModel.expected_keys

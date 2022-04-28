@@ -10,8 +10,32 @@ from app.services import (
 from app.services.order_service import retrieve_orders_admin
 
 
+from app.configs.database import db
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
+
+
 def create_order():
-    ...
+    data = request.get_json()
+
+    try:
+        new_order: Order = Order(**data)
+        db.session.add(new_order)
+        db.session.commit()
+
+    except IntegrityError as e:
+        if isinstance(e.orig, UniqueViolation):
+            return {
+                "error": e.args[0]
+                .split("Key (", 1)[-1]
+                .replace("(", " ")
+                .replace(")", " ")
+                .replace("\n", "")
+            }, HTTPStatus.CONFLICT
+
+        return e.args[0]
+
+    return jsonify(new_order), HTTPStatus.CREATED
 
 
 def retrieve_orders():

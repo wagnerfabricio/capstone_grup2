@@ -16,6 +16,7 @@ class Products(db.Model):
     price: str
     active: bool
     qtt_stock: int
+    category_id: int
 
     __tablename__ = "products"
 
