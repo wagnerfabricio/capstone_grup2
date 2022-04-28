@@ -8,3 +8,5 @@ class UserClassModel(db.Model):
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     type = db.Column(db.String, unique=True, nullable=False)
+
+    

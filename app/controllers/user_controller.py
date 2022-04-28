@@ -1,9 +1,11 @@
 from http import HTTPStatus
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 from app.models.exception_model import InvalidEmailError, InvalidPasswordError
 from app.models.user_model import UserModel
 from app.configs.database import db
 from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation, NotNullViolation
+from app.services import retrieve_orders_user
 
 from datetime import timedelta
 
@@ -18,21 +20,37 @@ def create_user():
         db.session.commit()
 
     except IntegrityError as e:
-        return {
-            "error": e.args[0]
-            .split("Key (", 1)[-1]
-            .replace("(", " ")
-            .replace(")", " ")
-            .replace("\n", "")
-        }, HTTPStatus.CONFLICT
+        if isinstance(e.orig, UniqueViolation):
+            return {
+                "error": e.args[0]
+                .split("Key (", 1)[-1]
+                .replace("(", " ")
+                .replace(")", " ")
+                .replace("\n", "")
+            }, HTTPStatus.CONFLICT
+
+        if isinstance(e.orig, NotNullViolation):
+
+            expected = UserModel.expected_keys
+            received = {key for key in data.keys()}
+            missing = expected - received
+
+            return {
+                "error": "missing keys",
+                "expected": list(expected),
+                "received": list(received),
+                "missing": list(missing),
+            }, HTTPStatus.BAD_REQUEST
+
+        return e.args[0]
 
     except InvalidPasswordError as e:
-        return {"error": e.args[0]}
+        return {"error": e.args[0]}, HTTPStatus.BAD_REQUEST
 
     except InvalidEmailError as e:
-        return {"error": e.args[0]}
+        return {"error": e.args[0]}, HTTPStatus.BAD_REQUEST
 
-    return jsonify(new_user), HTTPStatus.OK
+    return jsonify(new_user), HTTPStatus.CREATED
 
 
 def signin():
@@ -44,5 +62,80 @@ def signin():
         return {"error": "Invalid email or password"}, HTTPStatus.UNAUTHORIZED
 
     token = create_access_token(user, expires_delta=timedelta(days=30))
+    admin = bool(user.user_class)
 
-    return {"access_token": token}, HTTPStatus.OK
+    return {
+        "data": {
+            "access_token": token,
+            "user": {
+                "email": user.email,
+                "name": user.name,
+                "id": user.id,
+                "admin": admin,
+            },
+        }
+    }, HTTPStatus.OK
+
+
+# --------------------------------- VERIFICAR -------------------------------- #
+def retrieve_orders():
+    orders = retrieve_orders_user()
+
+    return jsonify(orders), HTTPStatus.OK
+
+
+# --------------------------------- VERIFICAR -------------------------------- #
+
+
+@jwt_required()
+def retrieve_user():
+    jwt_user = get_jwt_identity()
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
+    if not user:
+        return {"error": "user id not found"}, HTTPStatus.NOT_FOUND
+
+    return jsonify(
+        {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "birthday": user.birthday,
+        }
+    )
+
+
+@jwt_required()
+def update_user():
+    data = request.get_json()
+
+    jwt_user = get_jwt_identity()
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
+    if not user:
+        return {"error": "user id not found"}, HTTPStatus.NOT_FOUND
+
+    for key, value in data.items():
+        setattr(user, key, value)
+
+    current_app.db.session.add(user)
+    current_app.db.session.commit()
+
+    return "", HTTPStatus.OK
+
+
+@jwt_required()
+def delete_user():
+    jwt_user = get_jwt_identity()
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
+    if not user:
+        return {"error": "user id not found"}, HTTPStatus.NOT_FOUND
+
+    current_app.db.session.delete(user)
+    current_app.db.session.commit()
+
+    return "", HTTPStatus.OK
