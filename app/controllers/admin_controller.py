@@ -5,6 +5,10 @@ from app.models.user_model import UserModel
 from app.models.user_class_model import UserClassModel
 from os import getenv
 from app.services import retrieve_orders_admin, retrieve_orders_detail
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 # ----------------------------------- USERS ---------------------------------- #
 @jwt_required()
