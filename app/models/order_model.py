@@ -19,8 +19,7 @@ class Order(db.Model):
 
     id = Column(Integer, primary_key=True)
 
-    # Está comentada pois ainda nao existe a tabela users
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     date = Column(Date)
     subtotal = Column(Numeric(asdecimal=False))
     total = Column(Numeric(asdecimal=False))
