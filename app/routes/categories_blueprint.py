@@ -5,3 +5,7 @@ bp = Blueprint('categories', __name__)
 
 bp.post('/categories')(categories_controller.create_categories)
 bp.get('/categories')(categories_controller.retrieve_categories)
+bp.get('/categories/<id>')(categories_controller.retrieve_categories_by_id)
+bp.patch('/categories/<id>')(categories_controller.update_category)
+bp.delete('/categories/<id>')(categories_controller.delete_category)
+

@@ -15,14 +15,16 @@ from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation
 
 
+from app.configs.database import db
+from sqlalchemy.exc import IntegrityError
+from psycopg2.errors import UniqueViolation
+
+
 def create_order():
     data = request.get_json()
-
-    list_products = data.pop("products")
-
+    list_products = data["products"]
     try:
         new_order: Order = Order(**data)
-        print(new_order)
         db.session.add(new_order)
         db.session.commit()
 

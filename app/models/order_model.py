@@ -28,7 +28,10 @@ class Order(db.Model):
 
     status_id = Column(
         UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False
+        
+        
     )
+   
     rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"))
     payment_id = Column(
         UUID(as_uuid=True), ForeignKey("orders_payments.id"), nullable=False

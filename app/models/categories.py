@@ -9,6 +9,7 @@ from uuid import uuid4
 @dataclass
 class Categories(db.Model):
 
+    id: str
     name: str
 
     __tablename__ = "categories"

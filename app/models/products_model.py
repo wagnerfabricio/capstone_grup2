@@ -12,12 +12,14 @@ from uuid import uuid4
 @dataclass
 class Products(db.Model):
 
+    id: str
     name: str
     description: str
     price: str
     active: bool
     qtt_stock: int
-
+    img: str
+    
     __tablename__ = "products"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -26,6 +28,7 @@ class Products(db.Model):
     price = Column(Numeric(asdecimal=False), nullable=False)
     active = Column(Boolean)
     qtt_stock = Column(Integer)
+    img = Column(String, default="https://www.food4fuel.com/wp-content/uploads/woocommerce-placeholder-600x600.png")
 
     category_id = db.Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))
 
