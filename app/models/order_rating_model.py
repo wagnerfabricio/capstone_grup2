@@ -15,10 +15,6 @@ class OrderRating(db.Model):
 
     __tablename__ = "orders_ratings"
 
-    id = Column(
-        # UUID(as_uuid=True), 
-        Integer,primary_key=True
-        # , default=uuid4
-        )
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     nota = Column(Integer, nullable=False)
     comment = Column(String(200))
