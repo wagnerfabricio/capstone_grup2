@@ -16,24 +16,24 @@ class Products(db.Model):
     price: str
     active: bool
     qtt_stock: int
+    img: str
     category_id: int
-
+    
     __tablename__ = "products"
 
-    id = db.Column(
-        # UUID(as_uuid=True), 
-        Integer,primary_key=True
-        # , default=uuid4
-        )
+    # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id = Column(Integer, primary_key=True)
     name = Column(String(50), unique=True, nullable=False)
     description = Column(String)
     price = Column(Numeric(asdecimal=False), nullable=False)
     active = Column(Boolean)
     qtt_stock = Column(Integer)
+    img = Column(String, default="https://www.food4fuel.com/wp-content/uploads/woocommerce-placeholder-600x600.png")
 
-    category_id = db.Column(
-        # UUID(as_uuid=True), 
-        Integer,db.ForeignKey("categories.id"))
+    # category_id = Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))
+    category_id = db.Column(Integer, db.ForeignKey("categories.id"))
 
-    category = db.relationship("Categories", back_populates="product", uselist=False)
+    category = relationship("Categories", back_populates="product", uselist=False)
+    
+
 
