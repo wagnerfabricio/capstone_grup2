@@ -22,7 +22,9 @@ from psycopg2.errors import UniqueViolation
 
 def create_order():
     data = request.get_json()
-    list_products = data["products"]
+
+    list_products = data.pop("products")
+
     try:
         new_order: Order = Order(**data)
         db.session.add(new_order)

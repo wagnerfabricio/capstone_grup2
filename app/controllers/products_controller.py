@@ -9,6 +9,7 @@ from flask_sqlalchemy import BaseQuery
 from sqlalchemy.exc import DataError
 from psycopg2.errors import InvalidTextRepresentation
 
+
 def create_products():
     try:
         data = request.get_json()
@@ -18,35 +19,38 @@ def create_products():
         wrong_key = []
 
         products_columns = [
-                "name",
-                "description",
-                "price",
-                "active",
-                "qtt_stock",
-                "img",
-                "category_id"
-            ]
+            "name",
+            "description",
+            "price",
+            "active",
+            "qtt_stock",
+            "img",
+            "category_id",
+        ]
 
         for key in data_keys:
-                if key not in products_columns:
-                    wrong_key.append(key)
-        
-        if len(wrong_key) > 0:
-                return {"valid keys": products_columns,
-                        "keys sent": wrong_key}, 422
+            if key not in products_columns:
+                wrong_key.append(key)
 
-        if type(data['name']) == str and type(data['description']) == str:
+        if len(wrong_key) > 0:
+            return {"valid keys": products_columns, "keys sent": wrong_key}, 422
+
+        if type(data["name"]) == str and type(data["description"]) == str:
 
             if type(data["active"]) != bool:
                 return {"error": "active must be bool."}, HTTPStatus.BAD_REQUEST
 
             if type(data["price"]) != int and type(data["price"]) != float:
-                return {"error": "price must be a numeric value."}, HTTPStatus.BAD_REQUEST
+                return {
+                    "error": "price must be a numeric value."
+                }, HTTPStatus.BAD_REQUEST
 
             if type(data["qtt_stock"]) != int:
-                return {"error": "qtt_stock must be a integer value."}, HTTPStatus.BAD_REQUEST
-            
-            data['name'] = data['name'].title()
+                return {
+                    "error": "qtt_stock must be a integer value."
+                }, HTTPStatus.BAD_REQUEST
+
+            data["name"] = data["name"].title()
 
             product = Products(**data)
 
@@ -58,18 +62,38 @@ def create_products():
             return jsonify(product), HTTPStatus.CREATED
 
         else:
-            return {"error": "name and description must be a string value"}, HTTPStatus.BAD_REQUEST
+            return {
+                "error": "name and description must be a string value"
+            }, HTTPStatus.BAD_REQUEST
     except:
         return {"error": "this product already exists!"}, HTTPStatus.CONFLICT
+
 
 def retrieve_products():
     try:
         base_query: Query = db.session.query(Products)
         records = base_query.all()
 
-        return jsonify(records), HTTPStatus.OK
+        return (
+            jsonify(
+                [
+                    {
+                        "id": product.id,
+                        "name": product.name,
+                        "price": product.price,
+                        "category": product.category.name,
+                        "description": product.description,
+                        "quantityStock": product.qtt_stock,
+                        "img": product.img,
+                    }
+                    for product in records
+                ]
+            ),
+            HTTPStatus.OK,
+        )
     except:
         return {"error": "no data found"}, HTTPStatus.NOT_FOUND
+
 
 def retrieve_products_by_id(id):
     base_query: Query = db.session.query(Products)
@@ -91,7 +115,6 @@ def retrieve_products_by_id(id):
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
-    
 
 def update_product(id):
     try:
@@ -117,6 +140,7 @@ def update_product(id):
             return {"error": "product does not exists"}, HTTPStatus.NOT_FOUND
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+
 
 def delete_product(id):
     try:
