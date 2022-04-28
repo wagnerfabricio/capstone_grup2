@@ -68,8 +68,27 @@ def delete_order():
     ...
 
 
-def update_order():
-    ...
+def update_order(id):
+    data: dict = request.get_json()
+    session = db.session
+
+    new_status = session.query(OrderStatus).filter_by(type=data["type"]).first()
+    order: Order = session.query(Order).filter_by(id=id).first()
+
+    print("STATUS PUXADO", new_status)
+    print("ORDER", order.status)
+
+    # order.status.type = new_status.type
+    # order.status.id = new_status.id
+
+    for key, value in data.items():
+        setattr(order.status, key, value)
+
+    session.add(order)
+    session.commit()
+
+    order_detail = retrieve_orders_detail(id)
+    return jsonify(order_detail), HTTPStatus.OK
 
 
 def create_order_payment():
