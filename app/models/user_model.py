@@ -57,4 +57,4 @@ class UserModel(db.Model):
         self.password_hash = generate_password_hash(password_to_hash)
 
     def verify_password(self, password_to_compare):
-        return check_password_hash(self.password_hash, password_to_compare)
+        return check_password_hash(password_to_compare, self.password_hash)

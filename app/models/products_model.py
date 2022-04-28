@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from uuid import uuid4
 
+
 @dataclass
 class Products(db.Model):
 
@@ -18,12 +19,10 @@ class Products(db.Model):
     active: bool
     qtt_stock: int
     img: str
-    category_id: int
     
     __tablename__ = "products"
 
-    # id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    id = Column(Integer, primary_key=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(50), unique=True, nullable=False)
     description = Column(String)
     price = Column(Numeric(asdecimal=False), nullable=False)
@@ -31,10 +30,6 @@ class Products(db.Model):
     qtt_stock = Column(Integer)
     img = Column(String, default="https://www.food4fuel.com/wp-content/uploads/woocommerce-placeholder-600x600.png")
 
-    # category_id = Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))
-    category_id = db.Column(Integer, db.ForeignKey("categories.id"))
+    category_id = db.Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))
 
-    category = relationship("Categories", back_populates="product", uselist=False)
-    
-
-
+    category = db.relationship("Categories", back_populates="product", uselist=False)
