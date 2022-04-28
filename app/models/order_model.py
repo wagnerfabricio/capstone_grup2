@@ -31,7 +31,7 @@ class Order(db.Model):
     )
     rating_id = Column(
         # UUID(as_uuid=True),
-         Integer,ForeignKey("orders_ratings.id"), nullable=False
+         Integer,ForeignKey("orders_ratings.id")
     )
     payment_id = Column(
         # UUID(as_uuid=True),

@@ -124,6 +124,7 @@ def retrieve_orders():
     }, HTTPStatus.UNAUTHORIZED
 
 
+@jwt_required()
 def retrieve_order_detail(order_id: int):
     admin: UserModel = UserModel.query.filter_by(
         email=get_jwt_identity()["email"]
