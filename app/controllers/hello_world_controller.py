@@ -12,7 +12,7 @@ def hello():
 
     try:
         hello = session.query(HelloWorld).get(1)
-        
+
         if not hello:
             new_hello = HelloWorld(greeting="Hello Kenzinho!")
             db.session.add(new_hello)

@@ -9,6 +9,7 @@ from flask_sqlalchemy import BaseQuery
 from sqlalchemy.exc import DataError
 from psycopg2.errors import InvalidTextRepresentation
 
+
 def create_categories():
     try:
         data = request.get_json()
@@ -18,20 +19,19 @@ def create_categories():
         wrong_key = []
 
         categories_columns = [
-                "name",
-            ]
+            "name",
+        ]
 
         for key in data_keys:
-                if key not in categories_columns:
-                    wrong_key.append(key)
-        
+            if key not in categories_columns:
+                wrong_key.append(key)
+
         if len(wrong_key) > 0:
-                return {"valid keys": categories_columns,
-                        "keys sent": wrong_key}, 422
+            return {"valid keys": categories_columns, "keys sent": wrong_key}, 422
 
-        if type(data['name']) == str:
+        if type(data["name"]) == str:
 
-            data['name'] = data['name'].title()
+            data["name"] = data["name"].title()
 
             category = Categories(**data)
 
@@ -47,6 +47,7 @@ def create_categories():
     except:
         return {"error": "this category already exists!"}, HTTPStatus.CONFLICT
 
+
 def retrieve_categories():
     try:
         base_query: Query = db.session.query(Categories)
@@ -55,6 +56,7 @@ def retrieve_categories():
         return jsonify(records), HTTPStatus.OK
     except:
         return {"error": "no data found"}, HTTPStatus.NOT_FOUND
+
 
 def retrieve_categories_by_id(id):
     base_query: Query = db.session.query(Categories)
@@ -74,6 +76,7 @@ def retrieve_categories_by_id(id):
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
     return jsonify(record), HTTPStatus.OK
+
 
 def update_category(id):
     try:
@@ -98,7 +101,8 @@ def update_category(id):
             return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
-        
+
+
 def delete_category(id):
     try:
         session: Session = db.session
@@ -118,6 +122,3 @@ def delete_category(id):
             return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
-
-
-    

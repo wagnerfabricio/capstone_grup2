@@ -1,7 +1,21 @@
 from datetime import datetime as dt
 from http import HTTPStatus
+
 from flask import jsonify, request
-from app.models import Order, OrderProduct, OrderStatus, OrderPayment, OrderRating
+from psycopg2.errors import UniqueViolation
+from sqlalchemy.exc import IntegrityError
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+
+from app.configs.database import db
+from app.models import (
+    Order,
+    OrderPayment,
+    OrderProduct,
+    OrderRating,
+    OrderStatus,
+    UserModel,
+)
 from app.services import (
     retrieve,
     retrieve_by_id,
@@ -10,23 +24,34 @@ from app.services import (
 )
 from app.services.order_service import retrieve_orders_admin
 
-from app.configs.database import db
-from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
 
-
-from app.configs.database import db
-from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
-
-
+@jwt_required()
 def create_order():
+    jwt_user = get_jwt_identity()
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
     data = request.get_json()
-    list_products = data["products"]
+    session = db.session
+    payment = data["payment"]
+
+    status: OrderStatus = (
+        session.query(OrderStatus).filter_by(type="Aguardando").first()
+    )
+    query_payment: OrderPayment = session.query(OrderPayment).filter_by(
+        type=payment.tile()
+    )
+
+    data["status_id"] = status.id
+    data["payment_id"] = query_payment.id
+    data["user_id"] = user.id
+
+    list_products = data.pop("products")
+
     try:
         new_order: Order = Order(**data)
-        db.session.add(new_order)
-        db.session.commit()
+        session.add(new_order)
+        session.commit()
 
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
@@ -47,8 +72,8 @@ def create_order():
             "sale_value": product["sub_total"],
         }
         order_product = OrderProduct(**new_data)
-        db.session.add(order_product)
-        db.session.commit()
+        session.add(order_product)
+        session.commit()
 
     order_detail = retrieve_orders_detail(new_order.id)
     return jsonify(order_detail), HTTPStatus.CREATED
@@ -76,9 +101,6 @@ def update_order(id):
 
     new_status = session.query(OrderStatus).filter_by(type=data["type"]).first()
     order: Order = session.query(Order).filter_by(id=id).first()
-
-    print("STATUS PUXADO", new_status)
-    print("ORDER", order.status)
 
     # order.status.type = new_status.type
     # order.status.id = new_status.id
