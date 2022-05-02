@@ -17,5 +17,5 @@ def init_app(app: Flask):
     api.register_blueprint(bp_categories)
     api.register_blueprint(bp_orders)
     api.register_blueprint(bp_admin)
+    api.register_blueprint(bp_addresses)
     app.register_blueprint(api)
-    app.register_blueprint(bp_addresses)
