@@ -33,16 +33,17 @@ def retrieve_orders_detail(id):
     session = current_app.db.session
 
     order_product_query: Query = (
-        session.query.with_entities(
-            OrderProduct.sale_value,
-            OrderProduct.id,
+        session.query(
             Products.name,
-            func.count(Products.name),
+            Products.img,
+            func.sum(OrderProduct.sale_value).label("sale_value"),
+            func.count(Products.name).label("quantity"),
         )
         .select_from(Order)
         .join(OrderProduct)
         .join(Products)
         .filter(Order.id == id)
+        .group_by(Products.name, OrderProduct.sale_value, Products.img)
         .all()
     )
 

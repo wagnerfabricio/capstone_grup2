@@ -23,7 +23,6 @@ class Order(db.Model):
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     date = Column(Date, default=dt.now())
-    subtotal = Column(Numeric(asdecimal=False))
     total = Column(Numeric(asdecimal=False))
 
     status_id = Column(

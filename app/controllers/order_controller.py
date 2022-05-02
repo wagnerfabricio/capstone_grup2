@@ -43,14 +43,16 @@ def create_order():
     user = UserModel.query.filter_by(email=jwt_user["email"]).first()
 
     session = db.session
-    payment = data["payment"]
+    payment = data.pop("payment")
 
     status: OrderStatus = (
-        session.query(OrderStatus).filter_by(type="Aguardando").first()
+        session.query(OrderStatus).filter_by(type="Preparando").first()
     )
-    query_payment: OrderPayment = session.query(OrderPayment).filter_by(
-        type=payment.tile()
+    query_payment: OrderPayment = (
+        session.query(OrderPayment).filter_by(type=payment.title()).first()
     )
+
+    print("QUERY", query_payment)
 
     data["status_id"] = status.id
     data["payment_id"] = query_payment.id
@@ -58,8 +60,11 @@ def create_order():
 
     list_products = data.pop("products")
 
+    print("DICT AQ", data)
+
     try:
         new_order: Order = Order(**data)
+        print("ORDERRRR", new_order.payment_id)
         session.add(new_order)
         session.commit()
 
