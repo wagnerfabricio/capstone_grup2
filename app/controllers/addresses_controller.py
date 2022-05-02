@@ -7,7 +7,7 @@ from app.models.addresses_model import AddressesModel
 from app.configs.database import db
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
-request_keys = ["street", "cep", "country", "city", "info", "district", "number"]
+request_keys = ["street", "cep", "country", "city", "district", "number"]
 
 def get_addresses():
     addresses = (

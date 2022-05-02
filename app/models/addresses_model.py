@@ -11,7 +11,7 @@ class AddressesModel(db.Model):
     cep = Column(String(9), nullable=False)
     country = Column(String(100), nullable=False)
     city = Column(String(58), nullable=False)
-    info = Column(String(100), nullable=False)
+    info = Column(String(100))
     district = Column(String(60), nullable=False)
     number = Column(Integer, nullable=False)
 
