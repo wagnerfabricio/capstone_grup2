@@ -13,9 +13,7 @@ from sqlalchemy.orm import relationship, backref
 class Order(db.Model):
     id: str
     status: dict
-    # date: str
-    # subtotal: float
-    # total: float
+ 
 
     __tablename__ = "orders"
 
@@ -29,7 +27,7 @@ class Order(db.Model):
         UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False
     )
 
-    rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"))
+    rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"), unique=True)
     payment_id = Column(
         UUID(as_uuid=True), ForeignKey("orders_payments.id"), nullable=False
     )

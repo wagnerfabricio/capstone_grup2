@@ -3,11 +3,12 @@ from dataclasses import asdict
 from flask import current_app
 from sqlalchemy.orm import Session, Query
 from sqlalchemy import func
+from flask_jwt_extended import get_jwt_identity
 
 from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
 from app.models.order_product_model import OrderProduct
 from .query_service import retrieve_by_id
-from app.models.exception_model import OrderKeysError
+from app.models.exception_model import OrderKeysError, IdNotFoundError
 
 
 def retrieve_orders_admin():
@@ -32,21 +33,6 @@ def retrieve_orders_detail(id):
 
     session = current_app.db.session
 
-    order_product_query: Query = (
-        session.query(
-            Products.name,
-            Products.img,
-            func.sum(OrderProduct.sale_value).label("sale_value"),
-            func.count(Products.name).label("quantity"),
-        )
-        .select_from(Order)
-        .join(OrderProduct)
-        .join(Products)
-        .filter(Order.id == id)
-        .group_by(Products.name, OrderProduct.sale_value, Products.img)
-        .all()
-    )
-
     user_query: Query = (
         session.query(
             UserModel.name,
@@ -62,6 +48,24 @@ def retrieve_orders_detail(id):
         .join(OrderPayment)
         .filter(Order.id == id)
         .first()
+    )
+
+    if not user_query:
+        raise IdNotFoundError()
+
+    order_product_query: Query = (
+        session.query(
+            Products.name,
+            Products.img,
+            func.sum(OrderProduct.sale_value).label("sale_value"),
+            func.count(Products.name).label("quantity"),
+        )
+        .select_from(Order)
+        .join(OrderProduct)
+        .join(Products)
+        .filter(Order.id == id)
+        .group_by(Products.name, OrderProduct.sale_value, Products.img)
+        .all()
     )
 
     order_user = user_query._asdict()
@@ -88,18 +92,31 @@ def retrieve_orders_user():
 def retrieve_orders_detail_user():
     session = current_app.db.session
 
+    order_query: Order = session.query(Order).filter(Order.id == id).first()
+
+    if not order_query:
+        raise IdNotFoundError()
+
     order_product_query: Query = (
         session.query(
-            OrderProduct.sale_value,
-            OrderProduct.id,
             Products.name,
+            Products.img,
+            func.sum(OrderProduct.sale_value).label("sale_value"),
+            func.count(Products.name).label("quantity"),
         )
         .select_from(Order)
         .join(OrderProduct)
         .join(Products)
         .filter(Order.id == id)
+        .group_by(Products.name, OrderProduct.sale_value, Products.img)
         .all()
     )
+
+    order_products = [item._asdict() for item in order_product_query]
+
+    response = {"total": order_query.total, "products": order_products}
+
+    return response
 
 
 def validate_order_keys(order_data: dict):
@@ -114,3 +131,37 @@ def validate_order_keys(order_data: dict):
 
     if missing_keys:
         raise OrderKeysError()
+
+
+def format_order_data(data: dict):
+    session = current_app.db.session
+    payment = data.pop("payment")
+
+    jwt_user = get_jwt_identity()
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
+    status: OrderStatus = (
+        session.query(OrderStatus).filter_by(type="Preparando").first()
+    )
+    query_payment: OrderPayment = (
+        session.query(OrderPayment).filter_by(type=payment.title()).first()
+    )
+
+    data["status_id"] = status.id
+    data["payment_id"] = query_payment.id
+    data["user_id"] = user.id
+
+
+def serialize_and_create_order_products(list_products, order):
+    session = current_app.db.session
+
+    for product in list_products:
+        new_data = {
+            "order_id": order.id,
+            "product_id": product["id"],
+            "sale_value": product["sub_total"],
+        }
+        order_product = OrderProduct(**new_data)
+        session.add(order_product)
+        session.commit()
