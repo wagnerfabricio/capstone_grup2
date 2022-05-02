@@ -2,9 +2,12 @@ from dataclasses import asdict
 
 from flask import current_app
 from sqlalchemy.orm import Session, Query
+from sqlalchemy import func
+
 from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
 from app.models.order_product_model import OrderProduct
 from .query_service import retrieve_by_id
+from app.models.exception_model import OrderKeysError
 
 
 def retrieve_orders_admin():
@@ -30,10 +33,11 @@ def retrieve_orders_detail(id):
     session = current_app.db.session
 
     order_product_query: Query = (
-        session.query(
+        session.query.with_entities(
             OrderProduct.sale_value,
             OrderProduct.id,
             Products.name,
+            func.count(Products.name),
         )
         .select_from(Order)
         .join(OrderProduct)
@@ -95,3 +99,17 @@ def retrieve_orders_detail_user():
         .filter(Order.id == id)
         .all()
     )
+
+
+def validate_order_keys(order_data: dict):
+    valid_keys = ["payment", "products", "total"]
+
+    wrong_keys = [key for key in list(order_data.keys()) if key not in valid_keys]
+
+    if wrong_keys:
+        raise OrderKeysError(wrong_keys, valid_keys)
+
+    missing_keys = [key for key in valid_keys if key not in list(order_data.keys())]
+
+    if missing_keys:
+        raise OrderKeysError()

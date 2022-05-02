@@ -5,7 +5,8 @@ from flask import jsonify, request
 from psycopg2.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import get_jwt_identity, jwt_required
-
+from app.models.exception_model import OrderKeysError
+from app.services import validate_order_keys
 
 from app.configs.database import db
 from app.models import (
@@ -28,10 +29,19 @@ from app.services.order_service import retrieve_orders_admin
 @jwt_required()
 def create_order():
     jwt_user = get_jwt_identity()
+    data = request.get_json()
+
+    try:
+        validate_order_keys(data)
+    except OrderKeysError as error:
+        return {
+            "error": error.message,
+            "wrong_keys": error.invalid_keys,
+            "expected_keys": error.expected_keys,
+        }, error.status_code
 
     user = UserModel.query.filter_by(email=jwt_user["email"]).first()
 
-    data = request.get_json()
     session = db.session
     payment = data["payment"]
 
