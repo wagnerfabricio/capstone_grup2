@@ -8,7 +8,7 @@ from flask_jwt_extended import get_jwt_identity
 from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
 from app.models.order_product_model import OrderProduct
 from .query_service import retrieve_by_id
-from app.models.exception_model import OrderKeysError, IdNotFoundError
+from app.models.exception_model import OrderKeysError, IdNotFoundError, MissingKeysError, TypeFieldError
 
 
 def retrieve_orders_admin():
@@ -89,7 +89,7 @@ def retrieve_orders_user():
     return list_orders
 
 
-def retrieve_orders_detail_user():
+def retrieve_orders_detail_user(id):
     session = current_app.db.session
 
     order_query: Order = session.query(Order).filter(Order.id == id).first()
@@ -130,14 +130,15 @@ def validate_order_keys(order_data: dict):
     missing_keys = [key for key in valid_keys if key not in list(order_data.keys())]
 
     if missing_keys:
-        raise OrderKeysError()
+        raise MissingKeysError(missing_keys, list(order_data.keys()))
 
 
-def format_order_data(data: dict):
+def format_order_data(data: dict, jwt_user):
     session = current_app.db.session
     payment = data.pop("payment")
 
-    jwt_user = get_jwt_identity()
+    if not type(payment) is str:
+        raise TypeFieldError("string","payment")
 
     user = UserModel.query.filter_by(email=jwt_user["email"]).first()
 
@@ -165,3 +166,59 @@ def serialize_and_create_order_products(list_products, order):
         order_product = OrderProduct(**new_data)
         session.add(order_product)
         session.commit()
+
+
+def validate_keys_update(data_keys: list):
+    valid_keys = ["type"]
+
+    wrong_keys = [key for key in data_keys if key not in valid_keys]
+
+    if wrong_keys:
+        raise OrderKeysError(wrong_keys, valid_keys)
+
+    missing_keys = [key for key in valid_keys if key not in data_keys]
+
+    if missing_keys:
+        raise MissingKeysError(missing_keys, data_keys)
+
+
+def validate_payment_keys(data_keys):
+    valid_keys = ["type"]
+
+    wrong_keys = [key for key in data_keys if key not in valid_keys]
+
+    if wrong_keys:
+        raise OrderKeysError(wrong_keys, valid_keys)
+
+    missing_keys = [key for key in valid_keys if key not in data_keys]
+
+    if missing_keys:
+        raise MissingKeysError(missing_keys, data_keys)
+
+
+def validate_status_keys(data_keys):
+    valid_keys = ["status"]
+
+    wrong_keys = [key for key in data_keys if key not in valid_keys]
+
+    if wrong_keys:
+        raise OrderKeysError(wrong_keys, valid_keys)
+
+    missing_keys = [key for key in valid_keys if key not in data_keys]
+
+    if missing_keys:
+        raise MissingKeysError(missing_keys, data_keys)
+
+
+def validate_rating_keys(data_keys):
+    valid_keys = ["rating", "comment"]
+
+    wrong_keys = [key for key in data_keys if key not in valid_keys]
+
+    if wrong_keys:
+        raise OrderKeysError(wrong_keys, valid_keys)
+
+    missing_keys = [key for key in valid_keys if key not in data_keys]
+
+    if missing_keys:
+        raise MissingKeysError(missing_keys, data_keys)

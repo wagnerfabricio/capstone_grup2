@@ -6,7 +6,9 @@ from datetime import datetime as dt
 from app.configs.database import db
 from sqlalchemy import Column, ForeignKey, Date, Numeric, Integer
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref,validates
+
+from app.models.exception_model import TypeFieldError
 
 
 @dataclass
@@ -38,3 +40,8 @@ class Order(db.Model):
     status = relationship("OrderStatus", uselist=False)
     rating = relationship("OrderRating", uselist=False)
     payment = relationship("OrderPayment", uselist=False)
+
+    @validates("total")
+    def validate_type_total(self,key,field):
+        if not type(field) is float:
+            raise TypeFieldError("float",key)

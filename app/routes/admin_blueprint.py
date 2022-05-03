@@ -1,6 +1,6 @@
 from flask import Blueprint
 
-from app.controllers import admin_controller
+from app.controllers import admin_controller, order_controller
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -13,3 +13,5 @@ bp.delete("/users/<user_id>")(admin_controller.delete_user_by_id)
 # ---------------------------------- ORDERS ---------------------------------- #
 bp.get("/orders")(admin_controller.retrieve_orders)
 bp.get("/orders/<order_id>")(admin_controller.retrieve_order_detail)
+bp.patch("/orders/<order_id>")(admin_controller.update_order)
+bp.delete("/orders/<order_id>")(admin_controller.delete_order)

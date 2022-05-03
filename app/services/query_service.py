@@ -18,10 +18,11 @@ def register(record):
 
 
 def retrieve_by_id(model, id):
-    record = model.query.get(id)
+    session = current_app.db.session
+    record = session.query(model).filter_by(id=id).first()
 
     if not record:
-        raise IdNotFoundError
+        raise IdNotFoundError()
 
     return record
 
