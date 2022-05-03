@@ -12,3 +12,6 @@ class InvalidEmailError(Exception):
 
 class InvalidPasswordError(Exception):
     ...
+
+class UnauthorizedError(Exception):
+    ...

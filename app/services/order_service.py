@@ -14,7 +14,12 @@ def retrieve_orders_admin():
 
     list_orders = []
     for order in orders:
-        mapped_order = {**asdict(order), "user": order.user, "total": order.total}
+        mapped_order = {
+            "id": order.id,
+            "status": order.status.type,
+            "user": order.user,
+            "total": order.total,
+        }
         list_orders.append(mapped_order)
 
     return list_orders
@@ -26,8 +31,8 @@ def retrieve_orders_detail(id):
 
     order_product_query: Query = (
         session.query(
-            OrderProduct.total,
-            OrderProduct.product_quantity,
+            OrderProduct.sale_value,
+            OrderProduct.id,
             Products.name,
         )
         .select_from(Order)
@@ -73,3 +78,20 @@ def retrieve_orders_user():
     ]
 
     return list_orders
+
+
+def retrieve_orders_detail_user():
+    session = current_app.db.session
+
+    order_product_query: Query = (
+        session.query(
+            OrderProduct.sale_value,
+            OrderProduct.id,
+            Products.name,
+        )
+        .select_from(Order)
+        .join(OrderProduct)
+        .join(Products)
+        .filter(Order.id == id)
+        .all()
+    )

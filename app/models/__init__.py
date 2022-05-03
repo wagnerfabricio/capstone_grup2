@@ -10,3 +10,4 @@ from .categories import Categories
 from .products_model import Products
 from .cart_model import Cart
 from .cart_products_model import CartProducts
+from .addresses_model import AddressesModel

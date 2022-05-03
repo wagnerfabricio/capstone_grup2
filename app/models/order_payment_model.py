@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
-from sqlalchemy import Column, String,Integer
+from sqlalchemy import Column, String, Integer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, backref
 
@@ -16,8 +16,6 @@ class OrderPayment(db.Model):
 
     __tablename__ = "orders_payments"
 
-    id = Column(Integer, primary_key=True)
-    type = Column(String(60), nullable=False)
-    status = Column(String(60), nullable=False)
-
-    # orders = relationship("Order", backref=backref("payment", uselist=False))
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    type = Column(String(60), nullable=False, unique=True)
+    status = Column(String(60))
