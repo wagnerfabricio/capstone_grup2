@@ -1,32 +1,43 @@
 from http import HTTPStatus
 from flask import request, jsonify
+from app.models.categories import Categories
 from app.models.products_model import Products
 from app.configs.database import db
 from sqlalchemy.orm.session import Session
 from sqlalchemy.orm import Query
 from werkzeug.exceptions import NotFound
 from flask_sqlalchemy import BaseQuery
-from sqlalchemy.exc import DataError
-from psycopg2.errors import InvalidTextRepresentation
-
+from sqlalchemy.exc import DataError, IntegrityError
+from psycopg2.errors import InvalidTextRepresentation, UniqueViolation
+from app.services.category_service import verify_if_category_exists
 
 def create_products():
     try:
         data = request.get_json()
 
-        data_keys = [key for key in data.keys()]
+        data_keys = {key for key in data.keys()}
 
         wrong_key = []
 
-        products_columns = [
+        products_columns = {
             "name",
             "description",
             "price",
             "active",
             "qtt_stock",
-            "img",
-            "category_id",
-        ]
+            "category",
+        }
+
+        missing_keys = products_columns - data_keys
+
+        
+        if missing_keys:
+            return {
+                "error": "missing keys",
+                "expected": list(products_columns),
+                "received": list(data_keys),
+                "missing": list(missing_keys),
+            }, HTTPStatus.BAD_REQUEST
 
         for key in data_keys:
             if key not in products_columns:
@@ -52,9 +63,17 @@ def create_products():
 
             data["name"] = data["name"].title()
 
-            product = Products(**data)
+            
+            category_name = data.pop('category')
 
             session: Session = db.session()
+            category = verify_if_category_exists(category_name)
+
+            data['category_id'] = category.id
+            
+
+            product = Products(**data)
+
 
             session.add(product)
             session.commit()
@@ -71,6 +90,22 @@ def create_products():
 
 def retrieve_products():
     try:
+        category = request.args.get('category')
+
+        if category:
+
+            base_query: Query = db.session.query(Categories)
+
+            record_query: BaseQuery = base_query.filter(Categories.name.ilike(f'%{category}%'))
+
+            record = record_query.first_or_404(description="id not found")
+
+            r = {"name": record.name,
+                "products": record.products}
+
+            return jsonify(r), HTTPStatus.OK
+        
+           
         base_query: Query = db.session.query(Products)
         records = base_query.all()
 
@@ -91,7 +126,7 @@ def retrieve_products():
             ),
             HTTPStatus.OK,
         )
-    except:
+    except Exception as error:
         return {"error": "no data found"}, HTTPStatus.NOT_FOUND
 
 

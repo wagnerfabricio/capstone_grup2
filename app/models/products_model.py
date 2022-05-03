@@ -32,4 +32,4 @@ class Products(db.Model):
 
     category_id = db.Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))
 
-    category = db.relationship("Categories", back_populates="product", uselist=False)
+    category = db.relationship("Categories", back_populates="products", uselist=False)
