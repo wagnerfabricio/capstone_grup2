@@ -20,17 +20,10 @@ def mercado_pago_listener():
     try:
         data = request.get_json()
 
-        query_id = request.args.get('id')
-        query_topic = request.args.get('topic')
-
         payment_id = data.get('data')
         
         if not payment_id:
-            new_payment = PaymentModel(type='Mercado Pago', status='error', mercadopago_id=query_id, mercadopago_type=query_topic)
-            db.session.add(new_payment)
-            db.session.commit()
-
-            return {'error': "order created with payment error"}
+            return {'error': "invalid payment method"}
 
         payment_id = payment_id.get('id')
 
