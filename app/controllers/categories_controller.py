@@ -8,6 +8,10 @@ from werkzeug.exceptions import NotFound
 from flask_sqlalchemy import BaseQuery
 from sqlalchemy.exc import DataError
 from psycopg2.errors import InvalidTextRepresentation
+from app.models.products_model import Products
+from app.services.category_service import verify_if_category_exists
+from app.models.exception_model import CategoryAlreadyExistsError
+from sqlalchemy.sql.operators import ilike_op
 
 def create_categories():
     try:
@@ -26,25 +30,30 @@ def create_categories():
                     wrong_key.append(key)
         
         if len(wrong_key) > 0:
-                return {"valid keys": categories_columns,
-                        "keys sent": wrong_key}, 422
+                return {
+                        "error": "invalid key",
+                        "valid key": categories_columns,
+                        "key sent": wrong_key}, 422
 
         if type(data['name']) == str:
 
             data['name'] = data['name'].title()
 
-            category = Categories(**data)
+            category = Categories.query.filter_by(name=data['name']).first()
 
-            session: Session = db.session()
+            if category:
+                raise CategoryAlreadyExistsError
 
-            session.add(category)
-            session.commit()
+            new_category = Categories(name=data['name'])
+            db.session.add(new_category)
+            db.session.commit()
 
-            return jsonify(category), HTTPStatus.CREATED
+            return jsonify(new_category), HTTPStatus.CREATED
 
         else:
             return {"error": "name must be a string value"}, HTTPStatus.BAD_REQUEST
-    except:
+
+    except CategoryAlreadyExistsError: 
         return {"error": "this category already exists!"}, HTTPStatus.CONFLICT
 
 def retrieve_categories():
@@ -55,6 +64,7 @@ def retrieve_categories():
         return jsonify(records), HTTPStatus.OK
     except:
         return {"error": "no data found"}, HTTPStatus.NOT_FOUND
+
 
 def retrieve_categories_by_id(id):
     base_query: Query = db.session.query(Categories)
@@ -74,6 +84,7 @@ def retrieve_categories_by_id(id):
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
     return jsonify(record), HTTPStatus.OK
+
 
 def update_category(id):
     try:
