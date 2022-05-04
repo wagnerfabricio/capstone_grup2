@@ -1,7 +1,7 @@
 from http import HTTPStatus
 import json
 from flask import jsonify
-# import requests
+import requests
 from flask import request, jsonify
 from app.models.addresses_model import AddressesModel
 from app.configs.database import db

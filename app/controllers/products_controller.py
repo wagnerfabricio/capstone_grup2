@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from itertools import product
 from flask import request, jsonify
 from app.models.categories import Categories
 from app.models.products_model import Products
@@ -17,8 +18,6 @@ def create_products():
 
         data_keys = {key for key in data.keys()}
 
-        wrong_key = []
-
         products_columns = {
             "name",
             "description",
@@ -29,8 +28,7 @@ def create_products():
         }
 
         missing_keys = products_columns - data_keys
-
-        
+      
         if missing_keys:
             return {
                 "error": "missing keys",
@@ -38,13 +36,6 @@ def create_products():
                 "received": list(data_keys),
                 "missing": list(missing_keys),
             }, HTTPStatus.BAD_REQUEST
-
-        for key in data_keys:
-            if key not in products_columns:
-                wrong_key.append(key)
-
-        if len(wrong_key) > 0:
-            return {"valid keys": products_columns, "keys sent": wrong_key}, 422
 
         if type(data["name"]) == str and type(data["description"]) == str:
 
@@ -105,6 +96,19 @@ def retrieve_products():
 
             return jsonify(r), HTTPStatus.OK
         
+        product_name = request.args.get('name')
+    
+        if product_name:
+         
+            base_query: Query = db.session.query(Products)
+
+            record_query: BaseQuery = base_query.filter(Products.name.ilike(f'%{product_name}%'))
+
+            record = record_query.first_or_404(description="id not found")
+
+            r = {"name": record.name}
+
+            return jsonify(r), HTTPStatus.OK
            
         base_query: Query = db.session.query(Products)
         records = base_query.all()
