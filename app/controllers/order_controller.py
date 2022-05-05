@@ -13,6 +13,8 @@ from app.services import (
     validate_payment_keys,
 )
 
+from sqlalchemy import func
+
 
 from app.configs.database import db
 from app.models import (
@@ -22,6 +24,9 @@ from app.models import (
     OrderRating,
     OrderStatus,
     UserModel,
+    Cart,
+    CartProducts,
+    Products,
 )
 from app.services import (
     retrieve,
@@ -39,6 +44,39 @@ from app.services.order_service import retrieve_orders_admin
 def create_order():
     data = request.get_json()
     jwt_user = get_jwt_identity()
+    session = db.session
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
+    if not user:
+        return {"error": "user id not found"}, HTTPStatus.NOT_FOUND
+
+    cart = Cart.query.filter(Cart.user_id == user.id).first()
+    total = (
+        session.query(func.sum(Products.price))
+        .select_from(CartProducts)
+        .join(Products)
+        .filter(CartProducts.cart_id == cart.id)
+        .first()
+    )
+
+    data["total"] = total[0]
+
+    cart_products = (
+        session.query(
+            Products.id,
+            Products.name,
+            Products.price,
+        )
+        .select_from(Cart)
+        .join(CartProducts)
+        .join(Products)
+        .filter(Cart.id == cart.id)
+        .all()
+    )
+
+    mapped_cart_products = [product._asdict() for product in cart_products]
+
     try:
         validate_order_keys(data)
         format_order_data(data, jwt_user)
@@ -50,10 +88,6 @@ def create_order():
         }, error.status_code
     except TypeFieldError as error:
         return {"error": error.message}, error.status_code
-
-    session = db.session
-
-    list_products = data.pop("products")
 
     try:
         new_order: Order = Order(**data)
@@ -75,7 +109,18 @@ def create_order():
 
         return e.args[0]
 
-    serialize_and_create_order_products(list_products, new_order)
+    cart_products_to_be_deleted = (
+        session.query(CartProducts).filter(CartProducts.cart_id == cart.id).all()
+    )
+
+    serialize_and_create_order_products(mapped_cart_products, new_order)
+
+    for cart_product in cart_products_to_be_deleted:
+        session.delete(cart_product)
+    session.commit()
+
+    session.delete(cart)
+    session.commit()
     # for product in list_products:
     #     new_data = {
     #         "order_id": new_order.id,

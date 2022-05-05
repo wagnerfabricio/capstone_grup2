@@ -12,3 +12,4 @@ from .order_service import (
     validate_status_keys,
     validate_rating_keys,
 )
+from .cart_service import retrieve_products_in_cart

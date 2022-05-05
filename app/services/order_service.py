@@ -8,7 +8,12 @@ from flask_jwt_extended import get_jwt_identity
 from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
 from app.models.order_product_model import OrderProduct
 from .query_service import retrieve_by_id
-from app.models.exception_model import OrderKeysError, IdNotFoundError, MissingKeysError, TypeFieldError
+from app.models.exception_model import (
+    OrderKeysError,
+    IdNotFoundError,
+    MissingKeysError,
+    TypeFieldError,
+)
 
 
 def retrieve_orders_admin():
@@ -120,7 +125,7 @@ def retrieve_orders_detail_user(id):
 
 
 def validate_order_keys(order_data: dict):
-    valid_keys = ["payment", "products", "total"]
+    valid_keys = ["payment", "total"]
 
     wrong_keys = [key for key in list(order_data.keys()) if key not in valid_keys]
 
@@ -138,7 +143,7 @@ def format_order_data(data: dict, jwt_user):
     payment = data.pop("payment")
 
     if not type(payment) is str:
-        raise TypeFieldError("string","payment")
+        raise TypeFieldError("string", "payment")
 
     user = UserModel.query.filter_by(email=jwt_user["email"]).first()
 
@@ -161,7 +166,7 @@ def serialize_and_create_order_products(list_products, order):
         new_data = {
             "order_id": order.id,
             "product_id": product["id"],
-            "sale_value": product["sub_total"],
+            "sale_value": product["price"],
         }
         order_product = OrderProduct(**new_data)
         session.add(order_product)

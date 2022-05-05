@@ -45,3 +45,5 @@ class Order(db.Model):
     def validate_type_total(self,key,field):
         if not type(field) is float:
             raise TypeFieldError("float",key)
+
+        return field
