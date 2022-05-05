@@ -58,7 +58,13 @@ def create_order():
 
     payment_method = create_payment(new_order.id)
 
-    # order_detail = retrieve_orders_detail(new_order.id)
+
+    # order_to_update = Order.query.get(new_order.id)
+
+    # setattr(order_to_update, "payment_id", payment_method.id)
+
+    # db.session.add(order_to_update)
+    # db.session.commit()
 
     user = UserModel.query.get(data["user_id"])
 
