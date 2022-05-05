@@ -1,8 +1,8 @@
 from flask import Blueprint
 
-from app.controllers import admin_controller
+from app.controllers import admin_controller, order_controller
 
-bp = Blueprint('admin', __name__, url_prefix='/admin')
+bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 # ----------------------------------- USERS ---------------------------------- #
 bp.get('/users')(admin_controller.retrieve_users)

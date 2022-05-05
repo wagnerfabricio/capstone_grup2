@@ -19,7 +19,7 @@ class Products(db.Model):
     active: bool
     qtt_stock: int
     img: str
-    
+
     __tablename__ = "products"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)

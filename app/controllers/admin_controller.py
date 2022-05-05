@@ -6,8 +6,10 @@ from app.models.exception_model import UnauthorizedError
 from app.models.user_model import UserModel
 from app.models.user_class_model import UserClassModel
 from os import getenv
-from app.services import retrieve_orders_admin, retrieve_orders_detail
+from app.services import retrieve_orders_admin, retrieve_orders_detail, retrieve_by_id
 from dotenv import load_dotenv
+from app.models import Order, OrderStatus, OrderProduct
+from app.models.exception_model import IdNotFoundError
 
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
@@ -130,15 +132,70 @@ def retrieve_order_detail(order_id: int):
     ).first()
 
     if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
-        order = retrieve_orders_detail(order_id)
-
+        try:
+            order = retrieve_orders_detail(order_id)
+        except IdNotFoundError:
+            return {"error": "Id not found!"}, HTTPStatus.NOT_FOUND
         return jsonify(order), HTTPStatus.OK
 
+
+@jwt_required()
+def update_order(order_id):
+    data: dict = request.get_json()
+    session = current_app.db.session
+
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
+
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        new_status = session.query(OrderStatus).filter_by(type=data["type"]).first()
+
+        # order: Order = session.query(Order).filter_by(id=order_id).first()
+        try:
+            order: Order = retrieve_by_id(Order, order_id)
+        except IdNotFoundError:
+            return {"error": "Id not found!"}, HTTPStatus.NOT_FOUND
+        for key, value in data.items():
+            setattr(order.status, key, value)
+
+        session.add(order)
+        session.commit()
+
+        order_detail = retrieve_orders_detail(order_id)
+        return jsonify(order_detail), HTTPStatus.OK
     return {
         "error": "you are not authorized to access this page"
     }, HTTPStatus.UNAUTHORIZED
 
 
+@jwt_required()
+def delete_order(order_id):
+
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
+
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        session = current_app.db.session
+        # order_to_delete = session.query(Order).filter(Order.id == order_id).first()
+        order_to_delete = retrieve_by_id(Order, order_id)
+
+        orders_products_to_delete = (
+            session.query(OrderProduct).filter(OrderProduct.order_id == order_id).all()
+        )
+
+        if orders_products_to_delete:
+            for order_product in orders_products_to_delete:
+                session.delete(order_product)
+
+        session.delete(order_to_delete)
+        session.commit()
+        return {}, HTTPStatus.NO_CONTENT
+
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 # --------------------------------- ADDRESSES -------------------------------- #
 @jwt_required()
 def get_addresses():

@@ -8,5 +8,8 @@ from .user_class_model import UserClassModel
 from .user_model import UserModel
 from .categories import Categories
 from .products_model import Products
+from .cart_model import Cart
+from .cart_products_model import CartProducts
+
+# from .cart_products_model import carts_products
 from .addresses_model import AddressesModel
-from .payments_model import PaymentModel
