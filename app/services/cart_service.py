@@ -10,7 +10,7 @@ def retrieve_products_in_cart(cart_id, dict=True):
             Products.id,
             Products.name,
             func.sum(Products.price).label("price"),
-            func.count(Products.name).label("quantity"),
+            func.count(Products.name).label("quantidade"),
             # Products.price,
             Products.img,
         )
