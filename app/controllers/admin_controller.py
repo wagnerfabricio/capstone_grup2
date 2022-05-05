@@ -140,11 +140,31 @@ def update_order(order_id):
     # order: Order = session.query(Order).filter_by(id=order_id).first()
     try:
         verify_admin_access()
-        new_status = session.query(OrderStatus).filter_by(type=data["type"]).first()
+        # new_status = session.query(OrderStatus).filter_by(type=data["type"]).first()
         order: Order = retrieve_by_id(Order, order_id)
 
-        for key, value in data.items():
-            setattr(order.status, key, value)
+        new_status = data.pop('status')
+
+        if new_status:
+            # status_id = OrderStatus.query.filter_by(type=new_status).first()
+            base_query = OrderStatus.query.filter(OrderStatus.type.ilike(f"%{new_status}%"))
+
+            status = base_query.first_or_404(description="id not found")
+
+            print('='*100)
+            print(status)
+            print('='*100)
+
+
+            if not status:
+
+                return {"error": "Invalid order status"}, HTTPStatus.BAD_REQUEST
+
+            data['status_id'] = status.id
+            setattr(order, "status_id", data['status_id'])
+
+        # for key, value in data.items():
+        #     setattr(order, key, value)
 
         session.add(order)
         session.commit()
