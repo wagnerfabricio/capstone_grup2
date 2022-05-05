@@ -5,6 +5,6 @@ from flask_jwt_extended import JWTManager
 
 
 def init_app(app: Flask):
-    app.config['JWT_SECRET_KEY'] = getenv('JWT_KEY')
-    
+    app.config["JWT_SECRET_KEY"] = getenv("JWT_KEY")
+
     JWTManager(app)
