@@ -147,17 +147,9 @@ def update_order(order_id):
 
         if new_status:
             # status_id = OrderStatus.query.filter_by(type=new_status).first()
-            base_query = OrderStatus.query.filter(OrderStatus.type.ilike(f"%{new_status}%"))
-
-            status = base_query.first_or_404(description="id not found")
-
-            print('='*100)
-            print(status)
-            print('='*100)
-
+            status = OrderStatus.query.filter(OrderStatus.type.ilike(f"%{new_status}%")).first()
 
             if not status:
-
                 return {"error": "Invalid order status"}, HTTPStatus.BAD_REQUEST
 
             data['status_id'] = status.id
