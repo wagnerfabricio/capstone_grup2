@@ -7,12 +7,16 @@ from flask import Flask
 from app import routes
 from app.configs import auth, database, migration
 
+from flask_cors import CORS
+
 
 load_dotenv()
 
 
 def create_app():
     app = Flask(__name__)
+
+    CORS(app)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = getenv("SQLALCHEMY_DATABASE_URI")
 

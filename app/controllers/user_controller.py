@@ -17,7 +17,9 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 def create_user():
     data = request.get_json()
     try:
-        new_user: UserModel = UserModel(**data)
+        new_user: UserModel = UserModel(
+            name=data["name"], email=data["email"], password=data["password"]
+        )
         db.session.add(new_user)
         db.session.commit()
 
@@ -71,18 +73,16 @@ def signin():
     user_address = asdict(user_address) if user_address else ""
 
     return {
-        "data": {
-            "access_token": token,
-            "user": {
-                "email": user.email,
-                "name": user.name,
-                "id": user.id,
-                "admin": admin,
-                "address": f'{user_address.get("street")}, {user_address.get("number")}, Bairro: {user_address.get("district")}, Cidade: {user_address.get("city")}/{user_address.get("state")} - CEP: {user_address.get("cep")}'
-                if type(user_address) is dict
-                else "",
-            },
-        }
+        "accessToken": token,
+        "user": {
+            "email": user.email,
+            "name": user.name,
+            "id": user.id,
+            "admin": admin,
+            "address": f'{user_address.get("street")}, {user_address.get("number")}, Bairro: {user_address.get("district")}, Cidade: {user_address.get("city")}/{user_address.get("state")} - CEP: {user_address.get("cep")}'
+            if type(user_address) is dict
+            else "",
+        },
     }, HTTPStatus.OK
 
 

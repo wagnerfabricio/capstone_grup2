@@ -1,8 +1,13 @@
+from dataclasses import asdict
 from datetime import datetime as dt
 from http import HTTPStatus
 
 
 from flask import jsonify, request
+from app.controllers.payment_controller import create_payment
+from app.models.payments_model import PaymentModel
+from app.models.user_model import UserModel
+from app.models.products_model import Products
 from psycopg2.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -19,7 +24,7 @@ from sqlalchemy import func
 from app.configs.database import db
 from app.models import (
     Order,
-    OrderPayment,
+    # OrderPayment,
     OrderProduct,
     OrderRating,
     OrderStatus,
@@ -78,7 +83,7 @@ def create_order():
     mapped_cart_products = [product._asdict() for product in cart_products]
 
     try:
-        validate_order_keys(data)
+        # validate_order_keys(data)
         format_order_data(data, jwt_user)
     except OrderKeysError as error:
         return {
@@ -107,7 +112,7 @@ def create_order():
                 .replace("\n", "")
             }, HTTPStatus.CONFLICT
 
-        return e.args[0]
+        return e.args[0], HTTPStatus.BAD_REQUEST
 
     cart_products_to_be_deleted = (
         session.query(CartProducts).filter(CartProducts.cart_id == cart.id).all()
@@ -121,18 +126,48 @@ def create_order():
 
     session.delete(cart)
     session.commit()
-    # for product in list_products:
-    #     new_data = {
-    #         "order_id": new_order.id,
-    #         "product_id": product["id"],
-    #         "sale_value": product["sub_total"],
-    #     }
-    #     order_product = OrderProduct(**new_data)
-    #     session.add(order_product)
-    #     session.commit()
 
-    order_detail = retrieve_orders_detail(new_order.id)
-    return jsonify(order_detail), HTTPStatus.CREATED
+    payment_method = create_payment(new_order.id)
+
+    user = UserModel.query.get(data["user_id"])
+
+    user_address = user.addresses[-1] if user.addresses else ""
+    user_address = asdict(user_address) if user_address else ""
+
+    order_status = OrderStatus.query.get(new_order.status_id).type
+
+    order_products = OrderProduct.query.filter_by(order_id=new_order.id).all()
+
+    products_list = [
+        Products.query.get(product.product_id) for product in order_products
+    ]
+
+    result = {
+        "user": {
+            "email": user.email,
+            "name": user.name,
+            "id": str(user.id),
+            "admin": bool(user.user_class),
+            "address": f'{user_address.get("street")}, {user_address.get("number")}, Bairro: {user_address.get("district")}, Cidade: {user_address.get("city")}/{user_address.get("state")} - CEP: {user_address.get("cep")}'
+            if type(user_address) is dict
+            else "",
+        },
+        "id": str(new_order.id),
+        "price": new_order.total,
+        "payment": payment_method.type,
+        "status": order_status,
+        "detail": [
+            {
+                "id": str(product.id),
+                "name": product.name,
+                "description": product.description,
+                "userId": str(user.id),
+            }
+            for product in products_list
+        ],
+    }
+
+    return result, HTTPStatus.CREATED
 
 
 def retrieve_orders():
@@ -147,7 +182,29 @@ def retrieve_order_by_id(id: int):
     if not response:
         return {"error": f"id {id} not found!"}, HTTPStatus.NOT_FOUND
 
-    return jsonify(response), HTTPStatus.OK
+    payment = PaymentModel.query.filter_by(order_id=id).first()
+
+    payment = asdict(payment)
+    print("=" * 100)
+    print(payment)
+    print("=" * 100)
+
+    if payment.get("mercadopago_id"):
+        return jsonify(response, {"payment_info": payment}), HTTPStatus.OK
+
+    return (
+        jsonify(
+            response,
+            {
+                "payment_info": {
+                    "id": payment.get("id"),
+                    "type": payment.get("type"),
+                    "status": payment.get("status"),
+                }
+            },
+        ),
+        HTTPStatus.OK,
+    )
 
 
 def delete_order(order_id):
@@ -203,45 +260,6 @@ def update_order(order_id):
 
     order_detail = retrieve_orders_detail(order_id)
     return jsonify(order_detail), HTTPStatus.OK
-
-
-def create_order_payment():
-    data = request.get_json()
-
-    try:
-        validate_payment_keys(list(data.keys()))
-        order_payment = OrderPayment(**data)
-        db.session.add(order_payment)
-        db.session.commit()
-    except OrderKeysError as error:
-        return {
-            "error": error.message,
-            "invalid_keys": error.invalid_keys,
-            "expected_keys": error.expected_keys,
-        }, error.status_code
-    except MissingKeysError as error:
-        return {
-            "error": error.message,
-            "missing_keys": error.missing_keys,
-            "received_keys": error.received_keys,
-        }, error.status_code
-
-    except TypeFieldError as error:
-        return {"error": error.message}, error.status_code
-
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            return {
-                "error": e.args[0]
-                .split("Key (", 1)[-1]
-                .replace("(", " ")
-                .replace(")", " ")
-                .replace("\n", "")
-            }, HTTPStatus.CONFLICT
-
-        return e.args[0]
-
-    return jsonify(order_payment), HTTPStatus.OK
 
 
 def create_order_status():

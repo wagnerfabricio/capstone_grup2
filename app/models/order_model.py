@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from os import getenv
 from uuid import uuid4
 
 from datetime import datetime as dt
@@ -15,7 +16,8 @@ from app.models.exception_model import TypeFieldError
 class Order(db.Model):
     id: str
     status: dict
- 
+    date: str
+    total: float
 
     __tablename__ = "orders"
 
@@ -25,25 +27,10 @@ class Order(db.Model):
     date = Column(Date, default=dt.now())
     total = Column(Numeric(asdecimal=False))
 
-    status_id = Column(
-        UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False
-    )
-
+    status_id = Column(UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False)
     rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"), unique=True)
-    payment_id = Column(
-        UUID(as_uuid=True), ForeignKey("orders_payments.id"), nullable=False
-    )
 
-    user = relationship(
-        "UserModel", backref=backref("orders", uselist=True), uselist=False
-    )
+    user = relationship("UserModel", backref=backref("orders", uselist=True), uselist=False)
     status = relationship("OrderStatus", uselist=False)
     rating = relationship("OrderRating", uselist=False)
-    payment = relationship("OrderPayment", uselist=False)
-
-    @validates("total")
-    def validate_type_total(self,key,field):
-        if not type(field) is float:
-            raise TypeFieldError("float",key)
-
-        return field
+    payment = relationship("PaymentModel", backref=backref("orders", uselist=False), uselist=False)

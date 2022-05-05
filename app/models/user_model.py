@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 @dataclass
 class UserModel(db.Model):
+    id: str
     email: str
     name: str
 

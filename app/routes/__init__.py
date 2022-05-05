@@ -7,6 +7,7 @@ from .order_blueprint import bp_orders
 from .admin_blueprint import bp as bp_admin
 from .cart_controller import bp as bp_carts
 from .addresses_blueprint import bp_addresses
+from .payment_blueprint import bp as bp_payments
 
 api = Blueprint("api", __name__)
 
@@ -20,4 +21,5 @@ def init_app(app: Flask):
     api.register_blueprint(bp_carts)
     api.register_blueprint(bp_admin)
     api.register_blueprint(bp_addresses)
+    api.register_blueprint(bp_payments)
     app.register_blueprint(api)
