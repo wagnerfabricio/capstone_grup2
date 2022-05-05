@@ -17,4 +17,4 @@ class Categories(db.Model):
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String, nullable=False)
 
-    product = db.relationship("Products", back_populates="category", uselist=True)
+    products = db.relationship("Products", back_populates="category", uselist=True)

@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 @dataclass
 class UserModel(db.Model):
+    id: str
     email: str
     name: str
 
@@ -24,9 +25,9 @@ class UserModel(db.Model):
     password_hash = db.Column(db.String)
     name = db.Column(db.String(100), nullable=False)
     birthday = db.Column(db.DateTime)
-    # address_id = db.Column(db.Integer, db.ForeignKey("address.id"))
     user_class = db.Column(UUID(as_uuid=True), db.ForeignKey("users_classes.id"))
 
+    addresses = db.relationship("AddressesModel")
     # orders = db.relationship('OrderModel', backref=db.backref('users', uselist=False))
     # cart = db.relationship('CartModel', backref=db.backref('users', uselist=False))
 

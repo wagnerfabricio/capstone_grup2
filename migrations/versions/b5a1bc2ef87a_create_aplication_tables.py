@@ -1,8 +1,8 @@
-"""create new tables with UUID
+"""create aplication tables
 
-Revision ID: ef5f7109ac76
+Revision ID: b5a1bc2ef87a
 Revises: 
-Create Date: 2022-04-28 18:19:05.590174
+Create Date: 2022-05-05 12:13:53.310377
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'ef5f7109ac76'
+revision = 'b5a1bc2ef87a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,16 +30,9 @@ def upgrade():
     sa.Column('visits', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('orders_payments',
-    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-    sa.Column('type', sa.String(length=60), nullable=False),
-    sa.Column('status', sa.String(length=60), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('type')
-    )
     op.create_table('orders_ratings',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-    sa.Column('nota', sa.Integer(), nullable=False),
+    sa.Column('rating', sa.Integer(), nullable=False),
     sa.Column('comment', sa.String(length=200), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
@@ -62,6 +55,7 @@ def upgrade():
     sa.Column('price', sa.Numeric(asdecimal=False), nullable=False),
     sa.Column('active', sa.Boolean(), nullable=True),
     sa.Column('qtt_stock', sa.Integer(), nullable=True),
+    sa.Column('quantityStock', sa.Integer(), nullable=True),
     sa.Column('img', sa.String(), nullable=True),
     sa.Column('category_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
@@ -79,19 +73,45 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
+    op.create_table('addresses',
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('street', sa.String(length=100), nullable=False),
+    sa.Column('number', sa.Integer(), nullable=False),
+    sa.Column('info', sa.String(length=100), nullable=True),
+    sa.Column('district', sa.String(length=60), nullable=False),
+    sa.Column('city', sa.String(length=58), nullable=False),
+    sa.Column('state', sa.String(length=58), nullable=False),
+    sa.Column('country', sa.String(length=100), nullable=False),
+    sa.Column('cep', sa.String(length=9), nullable=False),
+    sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('carts',
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
     op.create_table('orders',
     sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('date', sa.Date(), nullable=True),
-    sa.Column('subtotal', sa.Numeric(asdecimal=False), nullable=True),
     sa.Column('total', sa.Numeric(asdecimal=False), nullable=True),
     sa.Column('status_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('rating_id', postgresql.UUID(as_uuid=True), nullable=True),
-    sa.Column('payment_id', postgresql.UUID(as_uuid=True), nullable=False),
-    sa.ForeignKeyConstraint(['payment_id'], ['orders_payments.id'], ),
     sa.ForeignKeyConstraint(['rating_id'], ['orders_ratings.id'], ),
     sa.ForeignKeyConstraint(['status_id'], ['orders_status.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('rating_id')
+    )
+    op.create_table('carts_products',
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('cart_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('product_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.ForeignKeyConstraint(['cart_id'], ['carts.id'], ),
+    sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('orders_products',
@@ -104,19 +124,33 @@ def upgrade():
     sa.ForeignKeyConstraint(['product_id'], ['products.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('payments',
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('type', sa.String(length=60), nullable=True),
+    sa.Column('status', sa.String(length=50), nullable=True),
+    sa.Column('mercadopago_id', sa.String(length=60), nullable=True),
+    sa.Column('mercadopago_type', sa.String(length=50), nullable=True),
+    sa.Column('order_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('mercadopago_id')
+    )
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
+    op.drop_table('payments')
     op.drop_table('orders_products')
+    op.drop_table('carts_products')
     op.drop_table('orders')
+    op.drop_table('carts')
+    op.drop_table('addresses')
     op.drop_table('users')
     op.drop_table('products')
     op.drop_table('users_classes')
     op.drop_table('orders_status')
     op.drop_table('orders_ratings')
-    op.drop_table('orders_payments')
     op.drop_table('hello_world')
     op.drop_table('categories')
     # ### end Alembic commands ###
