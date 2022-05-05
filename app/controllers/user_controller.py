@@ -73,7 +73,7 @@ def signin():
     user_address = asdict(user_address) if user_address else ""
 
     return {
-        "access_token": token,
+        "accessToken": token,
         "user": {
             "email": user.email,
             "name": user.name,
