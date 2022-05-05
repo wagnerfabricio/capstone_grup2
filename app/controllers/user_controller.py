@@ -17,7 +17,7 @@ from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_requir
 def create_user():
     data = request.get_json()
     try:
-        new_user: UserModel = UserModel(**data)
+        new_user: UserModel = UserModel(name=data["name"], email=data["email"], password=data["password"])
         db.session.add(new_user)
         db.session.commit()
 
