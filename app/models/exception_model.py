@@ -34,7 +34,15 @@ class MissingKeysError(Exception):
 
 
 class TypeFieldError(Exception):
-    def __init__(self, expected_type,key):
+    def __init__(self, expected_type, key):
         self.expected_type = expected_type
         self.status_code = HTTPStatus.BAD_REQUEST
         self.message = f"field {key} must be a {expected_type}"
+
+
+class CategoryAlreadyExistsError(Exception):
+    ...
+
+
+class UnauthorizedError(Exception):
+    ...

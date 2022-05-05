@@ -7,6 +7,8 @@ from sqlalchemy.exc import IntegrityError
 from psycopg2.errors import UniqueViolation, NotNullViolation
 from app.services import retrieve_orders_user
 
+from dataclasses import asdict
+
 from datetime import timedelta
 
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
@@ -64,6 +66,10 @@ def signin():
     token = create_access_token(user, expires_delta=timedelta(days=30))
     admin = bool(user.user_class)
 
+    user_address = user.addresses[-1] if user.addresses else ""
+    # user_address = user_address.__dict__ if user_address else ""
+    user_address = asdict(user_address) if user_address else ""
+
     return {
         "data": {
             "access_token": token,
@@ -72,13 +78,24 @@ def signin():
                 "name": user.name,
                 "id": user.id,
                 "admin": admin,
+                "address": f'{user_address.get("street")}, {user_address.get("number")}, Bairro: {user_address.get("district")}, Cidade: {user_address.get("city")}/{user_address.get("state")} - CEP: {user_address.get("cep")}'
+                if type(user_address) is dict
+                else "",
             },
         }
     }, HTTPStatus.OK
 
 
 # --------------------------------- VERIFICAR -------------------------------- #
+@jwt_required()
 def retrieve_orders():
+    jwt_user = get_jwt_identity()
+
+    user = UserModel.query.filter_by(email=jwt_user["email"]).first()
+
+    if not user:
+        return {"error": "user id not found"}, HTTPStatus.NOT_FOUND
+
     orders = retrieve_orders_user()
 
     return jsonify(orders), HTTPStatus.OK
@@ -102,6 +119,7 @@ def retrieve_user():
             "name": user.name,
             "email": user.email,
             "birthday": user.birthday,
+            "addresses": user.addresses,
         }
     )
 

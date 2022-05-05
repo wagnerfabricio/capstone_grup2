@@ -12,3 +12,4 @@ from .cart_model import Cart
 from .cart_products_model import CartProducts
 
 # from .cart_products_model import carts_products
+from .addresses_model import AddressesModel
