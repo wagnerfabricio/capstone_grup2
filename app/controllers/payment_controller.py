@@ -60,3 +60,24 @@ def retrieve_payments():
     payment_list = PaymentModel.query.all()
 
     return jsonify(payment_list), HTTPStatus.OK
+
+
+def update_payment(id):
+    data = request.get_json()
+
+    payment_status =  data.get('status')
+
+    payment = PaymentModel.query.get(id)
+
+    if not payment: 
+        return {"error": "Payment not found"}, HTTPStatus.NOT_FOUND
+
+    if not payment_status:
+        return {"error": "Payment status not found"}, HTTPStatus.BAD_REQUEST
+
+    setattr(payment, 'status', payment_status)
+
+    db.session.add(payment)
+    db.session.commit()
+
+    return jsonify(payment), HTTPStatus.OK
