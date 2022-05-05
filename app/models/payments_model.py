@@ -10,6 +10,7 @@ class PaymentModel(db.Model):
     status: str
     mercadopago_id: str
     mercadopago_type: str
+    order_id: str
 
     __tablename__ = "payments"
 
