@@ -155,9 +155,6 @@ def update_order(order_id):
             data['status_id'] = status.id
             setattr(order, "status_id", data['status_id'])
 
-        # for key, value in data.items():
-        #     setattr(order, key, value)
-
         session.add(order)
         session.commit()
         order_detail = retrieve_orders_detail(order_id)
