@@ -9,13 +9,17 @@ from flask_sqlalchemy import BaseQuery
 from sqlalchemy.exc import DataError
 from psycopg2.errors import InvalidTextRepresentation
 from app.models.products_model import Products
+from app.services.admin_service import verify_admin_access
 from app.services.category_service import verify_if_category_exists
-from app.models.exception_model import CategoryAlreadyExistsError
+from app.models.exception_model import CategoryAlreadyExistsError, UnauthorizedError
 from sqlalchemy.sql.operators import ilike_op
+from flask_jwt_extended import jwt_required
 
 
+@jwt_required()
 def create_categories():
     try:
+        verify_admin_access()
         data = request.get_json()
 
         data_keys = [key for key in data.keys()]
@@ -31,21 +35,22 @@ def create_categories():
                 wrong_key.append(key)
 
         if len(wrong_key) > 0:
-                return {
-                        "error": "invalid key",
-                        "valid key": categories_columns,
-                        "key sent": wrong_key}, 422
+            return {
+                "error": "invalid key",
+                "valid key": categories_columns,
+                "key sent": wrong_key,
+            }, 422
 
         if type(data["name"]) == str:
 
             data["name"] = data["name"].title()
 
-            category = Categories.query.filter_by(name=data['name']).first()
+            category = Categories.query.filter_by(name=data["name"]).first()
 
             if category:
                 raise CategoryAlreadyExistsError
 
-            new_category = Categories(name=data['name'])
+            new_category = Categories(name=data["name"])
             db.session.add(new_category)
             db.session.commit()
 
@@ -54,7 +59,9 @@ def create_categories():
         else:
             return {"error": "name must be a string value"}, HTTPStatus.BAD_REQUEST
 
-    except CategoryAlreadyExistsError: 
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+    except CategoryAlreadyExistsError:
         return {"error": "this category already exists!"}, HTTPStatus.CONFLICT
 
 
@@ -88,8 +95,10 @@ def retrieve_categories_by_id(id):
     return jsonify(record), HTTPStatus.OK
 
 
+@jwt_required()
 def update_category(id):
     try:
+        verify_admin_access()
         data = request.get_json()
 
         session: Session = db.session
@@ -106,15 +115,18 @@ def update_category(id):
 
         return jsonify(record), HTTPStatus.OK
 
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
     except DataError as e:
         if isinstance(e.orig, InvalidTextRepresentation):
             return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
-
+@jwt_required()
 def delete_category(id):
     try:
+        verify_admin_access()
         session: Session = db.session
 
         record = session.query(Categories).get(id)
@@ -126,6 +138,9 @@ def delete_category(id):
         session.commit()
 
         return "", HTTPStatus.NO_CONTENT
+
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
 
     except DataError as e:
         if isinstance(e.orig, InvalidTextRepresentation):
