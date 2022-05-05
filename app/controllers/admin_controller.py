@@ -123,7 +123,7 @@ def retrieve_orders():
         orders = retrieve_orders_admin()
 
         return jsonify(orders), HTTPStatus.OK
-        ...
+
     return {
         "error": "you are not authorized to access this page"
     }, HTTPStatus.UNAUTHORIZED

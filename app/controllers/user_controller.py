@@ -78,8 +78,10 @@ def signin():
 
 
 # --------------------------------- VERIFICAR -------------------------------- #
+@jwt_required()
 def retrieve_orders():
-    orders = retrieve_orders_user()
+    jwt_user = get_jwt_identity()
+    orders = retrieve_orders_user(jwt_user)
 
     return jsonify(orders), HTTPStatus.OK
 

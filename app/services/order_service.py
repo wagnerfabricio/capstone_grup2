@@ -8,7 +8,12 @@ from flask_jwt_extended import get_jwt_identity
 from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
 from app.models.order_product_model import OrderProduct
 from .query_service import retrieve_by_id
-from app.models.exception_model import OrderKeysError, IdNotFoundError, MissingKeysError, TypeFieldError
+from app.models.exception_model import (
+    OrderKeysError,
+    IdNotFoundError,
+    MissingKeysError,
+    TypeFieldError,
+)
 
 
 def retrieve_orders_admin():
@@ -76,10 +81,10 @@ def retrieve_orders_detail(id):
     return response
 
 
-def retrieve_orders_user():
+def retrieve_orders_user(jwt_user):
     session: Session = current_app.db.session
 
-    orders = session.query(Order).all()
+    orders = session.query(Order).filter(Order.user_id == jwt_user["id"]).all()
 
     list_orders = [
         {"id": order.id, "status": order.status.type, "payment": order.payment.type}
@@ -138,7 +143,7 @@ def format_order_data(data: dict, jwt_user):
     payment = data.pop("payment")
 
     if not type(payment) is str:
-        raise TypeFieldError("string","payment")
+        raise TypeFieldError("string", "payment")
 
     user = UserModel.query.filter_by(email=jwt_user["email"]).first()
 

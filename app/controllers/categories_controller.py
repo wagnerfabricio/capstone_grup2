@@ -1,4 +1,6 @@
 from http import HTTPStatus
+from os import getenv
+from dotenv import load_dotenv
 from flask import request, jsonify
 from app.models.categories import Categories
 from app.configs.database import db
@@ -8,44 +10,58 @@ from werkzeug.exceptions import NotFound
 from flask_sqlalchemy import BaseQuery
 from sqlalchemy.exc import DataError
 from psycopg2.errors import InvalidTextRepresentation
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
+from app.models.user_model import UserModel
+
+load_dotenv()
 
 
+@jwt_required()
 def create_categories():
-    try:
-        data = request.get_json()
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-        data_keys = [key for key in data.keys()]
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        try:
+            data = request.get_json()
 
-        wrong_key = []
+            data_keys = [key for key in data.keys()]
 
-        categories_columns = [
-            "name",
-        ]
+            wrong_key = []
 
-        for key in data_keys:
-            if key not in categories_columns:
-                wrong_key.append(key)
+            categories_columns = [
+                "name",
+            ]
 
-        if len(wrong_key) > 0:
-            return {"valid keys": categories_columns, "keys sent": wrong_key}, 422
+            for key in data_keys:
+                if key not in categories_columns:
+                    wrong_key.append(key)
 
-        if type(data["name"]) == str:
+            if len(wrong_key) > 0:
+                return {"valid keys": categories_columns, "keys sent": wrong_key}, 422
 
-            data["name"] = data["name"].title()
+            if type(data["name"]) == str:
 
-            category = Categories(**data)
+                data["name"] = data["name"].title()
 
-            session: Session = db.session()
+                category = Categories(**data)
 
-            session.add(category)
-            session.commit()
+                session: Session = db.session()
 
-            return jsonify(category), HTTPStatus.CREATED
+                session.add(category)
+                session.commit()
 
-        else:
-            return {"error": "name must be a string value"}, HTTPStatus.BAD_REQUEST
-    except:
-        return {"error": "this category already exists!"}, HTTPStatus.CONFLICT
+                return jsonify(category), HTTPStatus.CREATED
+
+            else:
+                return {"error": "name must be a string value"}, HTTPStatus.BAD_REQUEST
+        except:
+            return {"error": "this category already exists!"}, HTTPStatus.CONFLICT
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 
 
 def retrieve_categories():
@@ -79,46 +95,63 @@ def retrieve_categories_by_id(id):
 
 
 def update_category(id):
-    try:
-        data = request.get_json()
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-        session: Session = db.session
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        try:
+            data = request.get_json()
 
-        record = session.query(Categories).get(id)
+            session: Session = db.session
 
-        if not record:
-            return {"error": "id not found"}, HTTPStatus.NOT_FOUND
+            record = session.query(Categories).get(id)
 
-        for key, value in data.items():
-            setattr(record, key, value)
+            if not record:
+                return {"error": "id not found"}, HTTPStatus.NOT_FOUND
 
-        session.commit()
+            for key, value in data.items():
+                setattr(record, key, value)
 
-        return jsonify(record), HTTPStatus.OK
+            session.commit()
 
-    except DataError as e:
-        if isinstance(e.orig, InvalidTextRepresentation):
-            return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+            return jsonify(record), HTTPStatus.OK
 
-        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+        except DataError as e:
+            if isinstance(e.orig, InvalidTextRepresentation):
+                return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+
+            return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 
 
 def delete_category(id):
-    try:
-        session: Session = db.session
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-        record = session.query(Categories).get(id)
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        try:
+            session: Session = db.session
 
-        if not record:
-            return {"error": "id not found"}, HTTPStatus.NOT_FOUND
+            record = session.query(Categories).get(id)
 
-        session.delete(record)
-        session.commit()
+            if not record:
+                return {"error": "id not found"}, HTTPStatus.NOT_FOUND
 
-        return "", HTTPStatus.NO_CONTENT
+            session.delete(record)
+            session.commit()
 
-    except DataError as e:
-        if isinstance(e.orig, InvalidTextRepresentation):
-            return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+            return "", HTTPStatus.NO_CONTENT
 
-        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+        except DataError as e:
+            if isinstance(e.orig, InvalidTextRepresentation):
+                return {"error": "category does not exists"}, HTTPStatus.NOT_FOUND
+
+            return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED

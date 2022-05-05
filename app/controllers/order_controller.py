@@ -1,5 +1,6 @@
 from datetime import datetime as dt
 from http import HTTPStatus
+from dotenv import load_dotenv
 
 
 from flask import jsonify, request
@@ -13,6 +14,7 @@ from app.services import (
     validate_payment_keys,
 )
 
+from os import getenv
 
 from app.configs.database import db
 from app.models import (
@@ -33,6 +35,9 @@ from app.services import (
     validate_keys_update,
 )
 from app.services.order_service import retrieve_orders_admin
+
+
+load_dotenv()
 
 
 @jwt_required()
@@ -90,10 +95,20 @@ def create_order():
     return jsonify(order_detail), HTTPStatus.CREATED
 
 
+@jwt_required()
 def retrieve_orders():
-    list_orders = retrieve_orders_admin()
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-    return jsonify(list_orders), HTTPStatus.OK
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+
+        list_orders = retrieve_orders_admin()
+        return jsonify(list_orders), HTTPStatus.OK
+
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 
 
 def retrieve_order_by_id(id: int):
@@ -105,6 +120,7 @@ def retrieve_order_by_id(id: int):
     return jsonify(response), HTTPStatus.OK
 
 
+@jwt_required()
 def delete_order(order_id):
     session = db.session
     order_to_delete = session.query(Order).filter(Order.id == order_id).first()
@@ -125,6 +141,7 @@ def delete_order(order_id):
     return {}, HTTPStatus.NO_CONTENT
 
 
+@jwt_required()
 def update_order(order_id):
     data: dict = request.get_json()
     session = db.session
@@ -199,45 +216,57 @@ def create_order_payment():
     return jsonify(order_payment), HTTPStatus.OK
 
 
+@jwt_required()
 def create_order_status():
-    data = request.get_json()
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-    try:
-        validate_status_keys(list(data.keys()))
-        order_status = OrderStatus(**data)
-        db.session.add(order_status)
-        db.session.commit()
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
 
-    except OrderKeysError as error:
-        return {
-            "error": error.message,
-            "invalid_keys": error.invalid_keys,
-            "expected_keys": error.expected_keys,
-        }, error.status_code
+        data: dict = request.get_json()
 
-    except MissingKeysError as error:
-        return {
-            "error": error.message,
-            "missing_keys": error.missing_keys,
-            "received_keys": error.received_keys,
-        }, error.status_code
+        try:
+            validate_status_keys(list(data.keys()))
+            data["status"] = data["status"].capitalize()
+            order_status = OrderStatus(**data)
+            db.session.add(order_status)
+            db.session.commit()
 
-    except TypeFieldError as error:
-        return {"error": error.message}, error.status_code
-
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
+        except OrderKeysError as error:
             return {
-                "error": e.args[0]
-                .split("Key (", 1)[-1]
-                .replace("(", " ")
-                .replace(")", " ")
-                .replace("\n", "")
-            }, HTTPStatus.CONFLICT
+                "error": error.message,
+                "invalid_keys": error.invalid_keys,
+                "expected_keys": error.expected_keys,
+            }, error.status_code
 
-        return e.args[0]
+        except MissingKeysError as error:
+            return {
+                "error": error.message,
+                "missing_keys": error.missing_keys,
+                "received_keys": error.received_keys,
+            }, error.status_code
 
-    return jsonify(order_status), HTTPStatus.OK
+        except TypeFieldError as error:
+            return {"error": error.message}, error.status_code
+
+        except IntegrityError as e:
+            if isinstance(e.orig, UniqueViolation):
+                return {
+                    "error": e.args[0]
+                    .split("Key (", 1)[-1]
+                    .replace("(", " ")
+                    .replace(")", " ")
+                    .replace("\n", "")
+                }, HTTPStatus.CONFLICT
+
+            return e.args[0]
+
+        return jsonify(order_status), HTTPStatus.OK
+
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 
 
 # def create_order_rating():

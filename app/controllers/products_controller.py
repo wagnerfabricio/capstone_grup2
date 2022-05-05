@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from dotenv import load_dotenv
 from flask import request, jsonify
 from app.models.products_model import Products
 from app.configs.database import db
@@ -8,65 +9,80 @@ from werkzeug.exceptions import NotFound
 from flask_sqlalchemy import BaseQuery
 from sqlalchemy.exc import DataError
 from psycopg2.errors import InvalidTextRepresentation
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from app.models import UserModel
+from os import getenv
 
+load_dotenv()
 
+@jwt_required()
 def create_products():
-    try:
-        data = request.get_json()
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-        data_keys = [key for key in data.keys()]
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
 
-        wrong_key = []
+        try:
+            data = request.get_json()
 
-        products_columns = [
-            "name",
-            "description",
-            "price",
-            "active",
-            "qtt_stock",
-            "img",
-            "category_id",
-        ]
+            data_keys = [key for key in data.keys()]
 
-        for key in data_keys:
-            if key not in products_columns:
-                wrong_key.append(key)
+            wrong_key = []
 
-        if len(wrong_key) > 0:
-            return {"valid keys": products_columns, "keys sent": wrong_key}, 422
+            products_columns = [
+                "name",
+                "description",
+                "price",
+                "active",
+                "qtt_stock",
+                "img",
+                "category_id",
+            ]
 
-        if type(data["name"]) == str and type(data["description"]) == str:
+            for key in data_keys:
+                if key not in products_columns:
+                    wrong_key.append(key)
 
-            if type(data["active"]) != bool:
-                return {"error": "active must be bool."}, HTTPStatus.BAD_REQUEST
+            if len(wrong_key) > 0:
+                return {"valid keys": products_columns, "keys sent": wrong_key}, 422
 
-            if type(data["price"]) != int and type(data["price"]) != float:
+            if type(data["name"]) == str and type(data["description"]) == str:
+
+                if type(data["active"]) != bool:
+                    return {"error": "active must be bool."}, HTTPStatus.BAD_REQUEST
+
+                if type(data["price"]) != int and type(data["price"]) != float:
+                    return {
+                        "error": "price must be a numeric value."
+                    }, HTTPStatus.BAD_REQUEST
+
+                if type(data["qtt_stock"]) != int:
+                    return {
+                        "error": "qtt_stock must be a integer value."
+                    }, HTTPStatus.BAD_REQUEST
+
+                data["name"] = data["name"].title()
+
+                product = Products(**data)
+
+                session: Session = db.session()
+
+                session.add(product)
+                session.commit()
+
+                return jsonify(product), HTTPStatus.CREATED
+
+            else:
                 return {
-                    "error": "price must be a numeric value."
+                    "error": "name and description must be a string value"
                 }, HTTPStatus.BAD_REQUEST
+        except:
+            return {"error": "this product already exists!"}, HTTPStatus.CONFLICT
 
-            if type(data["qtt_stock"]) != int:
-                return {
-                    "error": "qtt_stock must be a integer value."
-                }, HTTPStatus.BAD_REQUEST
-
-            data["name"] = data["name"].title()
-
-            product = Products(**data)
-
-            session: Session = db.session()
-
-            session.add(product)
-            session.commit()
-
-            return jsonify(product), HTTPStatus.CREATED
-
-        else:
-            return {
-                "error": "name and description must be a string value"
-            }, HTTPStatus.BAD_REQUEST
-    except:
-        return {"error": "this product already exists!"}, HTTPStatus.CONFLICT
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 
 
 def retrieve_products():
@@ -116,49 +132,67 @@ def retrieve_products_by_id(id):
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
 
+@jwt_required
 def update_product(id):
-    try:
-        data = request.get_json()
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-        session: Session = db.session
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        try:
+            data = request.get_json()
 
-        record = session.query(Products).get(id)
+            session: Session = db.session
 
-        if not record:
-            return {"error": "id not found"}, HTTPStatus.NOT_FOUND
+            record = session.query(Products).get(id)
 
-        for key, value in data.items():
-            setattr(record, key, value)
+            if not record:
+                return {"error": "id not found"}, HTTPStatus.NOT_FOUND
 
-        session.commit()
+            for key, value in data.items():
+                setattr(record, key, value)
 
-        return jsonify(record), HTTPStatus.OK
+            session.commit()
 
-    except DataError as e:
+            return jsonify(record), HTTPStatus.OK
 
-        if isinstance(e.orig, InvalidTextRepresentation):
-            return {"error": "product does not exists"}, HTTPStatus.NOT_FOUND
+        except DataError as e:
 
-        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+            if isinstance(e.orig, InvalidTextRepresentation):
+                return {"error": "product does not exists"}, HTTPStatus.NOT_FOUND
 
+            return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED
 
+@jwt_required()
 def delete_product(id):
-    try:
-        session: Session = db.session
+    admin: UserModel = UserModel.query.filter_by(
+        email=get_jwt_identity()["email"]
+    ).first()
 
-        record = session.query(Products).get(id)
+    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+        try:
+            session: Session = db.session
 
-        if not record:
-            return {"error": "id not found"}, HTTPStatus.NOT_FOUND
+            record = session.query(Products).get(id)
 
-        session.delete(record)
-        session.commit()
+            if not record:
+                return {"error": "id not found"}, HTTPStatus.NOT_FOUND
 
-        return "", HTTPStatus.NO_CONTENT
+            session.delete(record)
+            session.commit()
 
-    except DataError as e:
+            return {}, HTTPStatus.NO_CONTENT
 
-        if isinstance(e.orig, InvalidTextRepresentation):
-            return {"error": "product does not exists"}, HTTPStatus.NOT_FOUND
+        except DataError as e:
 
-        return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+            if isinstance(e.orig, InvalidTextRepresentation):
+                return {"error": "product does not exists"}, HTTPStatus.NOT_FOUND
+
+            return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+
+    return {
+        "error": "you are not authorized to access this page"
+    }, HTTPStatus.UNAUTHORIZED

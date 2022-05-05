@@ -5,8 +5,10 @@ from app.configs.database import db
 from app.models import OrderRating, Order, UserModel
 from app.models.exception_model import OrderKeysError, MissingKeysError, TypeFieldError
 from app.services import validate_rating_keys
+from flask_jwt_extended import jwt_required
 
 
+@jwt_required()
 def create_rating(id):
     data = request.get_json()
 
