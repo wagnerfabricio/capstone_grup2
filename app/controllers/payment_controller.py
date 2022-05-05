@@ -5,6 +5,7 @@ from flask import jsonify, request
 from dotenv import load_dotenv
 from os import getenv
 import json
+from app.models.order_model import Order
 
 from app.models.payments_model import PaymentModel
 from app.configs.database import db
@@ -35,12 +36,23 @@ def mercado_pago_listener():
 
         payment_info = json.loads(requisition.content)
 
-        new_payment = PaymentModel(type='Mercado Pago', status=payment_info.get('status'), mercadopago_id=payment_info.get('id'), mercadopago_type=payment_info.get('payment_type_id'))
+        # order_id = payment_info.get("external_reference")
+        # order = Order.session.get()
 
-        db.session.add(new_payment)
+        payment = PaymentModel.query.get(payment_info.get("external_reference"))
+
+        if not payment:
+            return {"error":"missing order_id"}
+
+        update_data = {"type":'Mercado Pago', "status":payment_info.get('status'), "mercadopago_id":payment_info.get('id'), "mercadopago_type":payment_info.get('payment_type_id')}
+
+        for key, value in update_data.items():
+            setattr(payment, key, value)
+
+        db.session.add(payment)
         db.session.commit()
 
-        return {"success": 'pagamento criado'}, HTTPStatus.CREATED
+        return {"success": 'pagamento alterado com sucesso'}, HTTPStatus.CREATED
     
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
