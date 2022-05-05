@@ -84,7 +84,7 @@ def update_user_by_id(user_id: str):
         current_app.db.session.add(user)
         current_app.db.session.commit()
 
-        return "", HTTPStatus.OK
+        return jsonify(user), HTTPStatus.OK
 
     except UnauthorizedError as e:
         return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
@@ -102,7 +102,7 @@ def delete_user_by_id(user_id: str):
         current_app.db.session.delete(user)
         current_app.db.session.commit()
 
-        return "", HTTPStatus.OK
+        return jsonify(user), HTTPStatus.OK
 
     except UnauthorizedError as e:
         return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
