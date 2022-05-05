@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, Query
 from sqlalchemy import func
 from flask_jwt_extended import get_jwt_identity
 
-from app.models import Order, OrderStatus, OrderPayment, UserModel, Products
+from app.models import Order, OrderStatus, UserModel, Products #OrderPayment
 from app.models.order_product_model import OrderProduct
 from .query_service import retrieve_by_id
 from app.models.exception_model import (
@@ -45,12 +45,12 @@ def retrieve_orders_detail(id):
             Order.id,
             Order.total,
             OrderStatus.type.label("status"),
-            OrderPayment.type.label("payment"),
+            # OrderPayment.type.label("payment"),
         )
         .select_from(Order)
         .join(UserModel)
         .join(OrderStatus)
-        .join(OrderPayment)
+        # .join(OrderPayment)
         .filter(Order.id == id)
         .first()
     )
@@ -140,22 +140,22 @@ def validate_order_keys(order_data: dict):
 
 def format_order_data(data: dict, jwt_user):
     session = current_app.db.session
-    payment = data.pop("payment")
+    # payment = data.pop("payment")
 
-    if not type(payment) is str:
-        raise TypeFieldError("string", "payment")
+    # if not type(payment) is str:
+    #     raise TypeFieldError("string", "payment")
 
     user = UserModel.query.filter_by(email=jwt_user["email"]).first()
 
     status: OrderStatus = (
-        session.query(OrderStatus).filter_by(type="Preparando").first()
+        session.query(OrderStatus).filter_by(type="Aguardando aceitação").first()
     )
-    query_payment: OrderPayment = (
-        session.query(OrderPayment).filter_by(type=payment.title()).first()
-    )
+    # query_payment: OrderPayment = (
+    #     session.query(OrderPayment).filter_by(type=payment.title()).first()
+    # )
 
     data["status_id"] = status.id
-    data["payment_id"] = query_payment.id
+    # data["payment_id"] = query_payment.id
     data["user_id"] = user.id
 
 

@@ -29,10 +29,10 @@ class Order(db.Model):
 
     status_id = Column(UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False)
     rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"), unique=True)
-    payment_id = Column(UUID(as_uuid=True), ForeignKey("orders_payments.id"))
+    # payment_id = Column(UUID(as_uuid=True), ForeignKey("orders_payments.id"))
 
     user = relationship("UserModel", backref=backref("orders", uselist=True), uselist=False)
     status = relationship("OrderStatus", uselist=False)
     rating = relationship("OrderRating", uselist=False)
-    payment = relationship("OrderPayment", uselist=False)
+    # payment = relationship("OrderPayment", uselist=False)
     new_payment = relationship("PaymentModel", backref=backref("orders", uselist=False), uselist=False)

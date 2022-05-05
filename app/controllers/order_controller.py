@@ -5,7 +5,6 @@ from http import HTTPStatus
 
 from flask import jsonify, request
 from app.controllers.payment_controller import create_payment
-from app.models import Order, OrderProduct, OrderStatus, OrderPayment
 from app.models.user_model import UserModel
 from app.models.products_model import Products
 from psycopg2.errors import UniqueViolation
@@ -24,7 +23,7 @@ from sqlalchemy import func
 from app.configs.database import db
 from app.models import (
     Order,
-    OrderPayment,
+    # OrderPayment,
     OrderProduct,
     OrderRating,
     OrderStatus,
@@ -83,7 +82,7 @@ def create_order():
     mapped_cart_products = [product._asdict() for product in cart_products]
 
     try:
-        validate_order_keys(data)
+        # validate_order_keys(data)
         format_order_data(data, jwt_user)
     except OrderKeysError as error:
         return {
@@ -259,43 +258,43 @@ def update_order(order_id):
     return jsonify(order_detail), HTTPStatus.OK
 
 
-def create_order_payment():
-    data = request.get_json()
+# def create_order_payment():
+#     data = request.get_json()
 
-    try:
-        validate_payment_keys(list(data.keys()))
-        order_payment = OrderPayment(**data)
-        db.session.add(order_payment)
-        db.session.commit()
-    except OrderKeysError as error:
-        return {
-            "error": error.message,
-            "invalid_keys": error.invalid_keys,
-            "expected_keys": error.expected_keys,
-        }, error.status_code
-    except MissingKeysError as error:
-        return {
-            "error": error.message,
-            "missing_keys": error.missing_keys,
-            "received_keys": error.received_keys,
-        }, error.status_code
+#     try:
+#         validate_payment_keys(list(data.keys()))
+#         order_payment = OrderPayment(**data)
+#         db.session.add(order_payment)
+#         db.session.commit()
+#     except OrderKeysError as error:
+#         return {
+#             "error": error.message,
+#             "invalid_keys": error.invalid_keys,
+#             "expected_keys": error.expected_keys,
+#         }, error.status_code
+#     except MissingKeysError as error:
+#         return {
+#             "error": error.message,
+#             "missing_keys": error.missing_keys,
+#             "received_keys": error.received_keys,
+#         }, error.status_code
 
-    except TypeFieldError as error:
-        return {"error": error.message}, error.status_code
+#     except TypeFieldError as error:
+#         return {"error": error.message}, error.status_code
 
-    except IntegrityError as e:
-        if isinstance(e.orig, UniqueViolation):
-            return {
-                "error": e.args[0]
-                .split("Key (", 1)[-1]
-                .replace("(", " ")
-                .replace(")", " ")
-                .replace("\n", "")
-            }, HTTPStatus.CONFLICT
+#     except IntegrityError as e:
+#         if isinstance(e.orig, UniqueViolation):
+#             return {
+#                 "error": e.args[0]
+#                 .split("Key (", 1)[-1]
+#                 .replace("(", " ")
+#                 .replace(")", " ")
+#                 .replace("\n", "")
+#             }, HTTPStatus.CONFLICT
 
-        return e.args[0]
+#         return e.args[0]
 
-    return jsonify(order_payment), HTTPStatus.OK
+#     return jsonify(order_payment), HTTPStatus.OK
 
 
 def create_order_status():
