@@ -11,7 +11,12 @@ from app.models.products_model import Products
 from psycopg2.errors import UniqueViolation
 from sqlalchemy.exc import IntegrityError
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.exception_model import OrderKeysError, MissingKeysError, TypeFieldError
+from app.models.exception_model import (
+    OrderKeysError,
+    MissingKeysError,
+    TypeFieldError,
+    UnauthorizedError,
+)
 from app.services import (
     validate_order_keys,
     validate_status_keys,
@@ -42,7 +47,8 @@ from app.services import (
     serialize_and_create_order_products,
     validate_keys_update,
 )
-from app.services.order_service import retrieve_orders_admin
+from app.services.admin_service import verify_admin_access
+from app.services.order_service import retrieve_orders_admin, retrieve_orders_detail_user
 
 
 @jwt_required()
@@ -170,14 +176,18 @@ def create_order():
     return result, HTTPStatus.CREATED
 
 
+@jwt_required()
 def retrieve_orders():
-    list_orders = retrieve_orders_admin()
-
+    try:
+        verify_admin_access()
+        list_orders = retrieve_orders_user()
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
     return jsonify(list_orders), HTTPStatus.OK
 
 
 def retrieve_order_by_id(id: int):
-    response = retrieve_orders_detail(id)
+    response = retrieve_orders_detail_user(id)
 
     if not response:
         return {"error": f"id {id} not found!"}, HTTPStatus.NOT_FOUND
@@ -262,14 +272,18 @@ def update_order(order_id):
     return jsonify(order_detail), HTTPStatus.OK
 
 
+@jwt_required()
 def create_order_status():
     data = request.get_json()
-
     try:
+        verify_admin_access()
         validate_status_keys(list(data.keys()))
         order_status = OrderStatus(**data)
         db.session.add(order_status)
         db.session.commit()
+
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
 
     except OrderKeysError as error:
         return {

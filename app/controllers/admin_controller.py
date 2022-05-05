@@ -111,72 +111,56 @@ def delete_user_by_id(user_id: str):
 # ---------------------------------- ORDERS ---------------------------------- #
 @jwt_required()
 def retrieve_orders():
-    admin: UserModel = UserModel.query.filter_by(
-        email=get_jwt_identity()["email"]
-    ).first()
-
-    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+    try:
+        verify_admin_access()
         orders = retrieve_orders_admin()
 
         return jsonify(orders), HTTPStatus.OK
-        ...
-    return {
-        "error": "you are not authorized to access this page"
-    }, HTTPStatus.UNAUTHORIZED
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
 
 
 @jwt_required()
 def retrieve_order_detail(order_id: int):
-    admin: UserModel = UserModel.query.filter_by(
-        email=get_jwt_identity()["email"]
-    ).first()
 
-    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
-        try:
-            order = retrieve_orders_detail(order_id)
-        except IdNotFoundError:
-            return {"error": "Id not found!"}, HTTPStatus.NOT_FOUND
+    try:
+        verify_admin_access()
+        order = retrieve_orders_detail(order_id)
         return jsonify(order), HTTPStatus.OK
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+    except IdNotFoundError:
+        return {"error": "Id not found!"}, HTTPStatus.NOT_FOUND
 
 
 @jwt_required()
 def update_order(order_id):
     data: dict = request.get_json()
     session = current_app.db.session
-
-    admin: UserModel = UserModel.query.filter_by(
-        email=get_jwt_identity()["email"]
-    ).first()
-
-    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+    # order: Order = session.query(Order).filter_by(id=order_id).first()
+    try:
+        verify_admin_access()
         new_status = session.query(OrderStatus).filter_by(type=data["type"]).first()
+        order: Order = retrieve_by_id(Order, order_id)
 
-        # order: Order = session.query(Order).filter_by(id=order_id).first()
-        try:
-            order: Order = retrieve_by_id(Order, order_id)
-        except IdNotFoundError:
-            return {"error": "Id not found!"}, HTTPStatus.NOT_FOUND
         for key, value in data.items():
             setattr(order.status, key, value)
 
         session.add(order)
         session.commit()
-
         order_detail = retrieve_orders_detail(order_id)
         return jsonify(order_detail), HTTPStatus.OK
-    return {
-        "error": "you are not authorized to access this page"
-    }, HTTPStatus.UNAUTHORIZED
+
+    except IdNotFoundError:
+        return {"error": "Id not found!"}, HTTPStatus.NOT_FOUND
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
 
 
 @jwt_required()
 def delete_order(order_id):
-
-    admin: UserModel = UserModel.query.filter_by(
-        email=get_jwt_identity()["email"]
-    ).first()
-
-    if str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
+    try:
+        verify_admin_access()
         session = current_app.db.session
         # order_to_delete = session.query(Order).filter(Order.id == order_id).first()
         order_to_delete = retrieve_by_id(Order, order_id)
@@ -193,9 +177,10 @@ def delete_order(order_id):
         session.commit()
         return {}, HTTPStatus.NO_CONTENT
 
-    return {
-        "error": "you are not authorized to access this page"
-    }, HTTPStatus.UNAUTHORIZED
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+
+
 # --------------------------------- ADDRESSES -------------------------------- #
 @jwt_required()
 def get_addresses():

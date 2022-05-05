@@ -2,6 +2,7 @@ from http import HTTPStatus
 from itertools import product
 from flask import request, jsonify
 from app.models.categories import Categories
+from app.models.exception_model import UnauthorizedError
 from app.models.products_model import Products
 from app.configs.database import db
 from sqlalchemy.orm.session import Session
@@ -12,8 +13,14 @@ from sqlalchemy.exc import DataError, IntegrityError
 from psycopg2.errors import InvalidTextRepresentation, UniqueViolation
 from app.services.category_service import verify_if_category_exists
 
+from app.services.admin_service import verify_admin_access
+from flask_jwt_extended import jwt_required
+
+
+@jwt_required()
 def create_products():
     try:
+        verify_admin_access()
         data = request.get_json()
 
         data_keys = {key for key in data.keys()}
@@ -41,24 +48,21 @@ def create_products():
                     "error": "price must be a numeric value."
                 }, HTTPStatus.BAD_REQUEST
 
-            if data.get('qtt_stock') and type(data.get("qtt_stock")) != int:
+            if data.get("qtt_stock") and type(data.get("qtt_stock")) != int:
                 return {
                     "error": "qtt_stock must be a integer value."
                 }, HTTPStatus.BAD_REQUEST
 
             data["name"] = data["name"].title()
 
-            
-            category_name = data.pop('category')
+            category_name = data.pop("category")
 
             session: Session = db.session()
             category = verify_if_category_exists(category_name)
 
-            data['category_id'] = category.id
-            
+            data["category_id"] = category.id
 
             product = Products(**data)
-
 
             session.add(product)
             session.commit()
@@ -69,41 +73,48 @@ def create_products():
             return {
                 "error": "name and description must be a string value"
             }, HTTPStatus.BAD_REQUEST
-    except:
+
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+
+    except IntegrityError:
         return {"error": "this product already exists!"}, HTTPStatus.CONFLICT
 
 
 def retrieve_products():
     try:
-        category = request.args.get('category')
+        category = request.args.get("category")
 
         if category:
 
             base_query: Query = db.session.query(Categories)
 
-            record_query: BaseQuery = base_query.filter(Categories.name.ilike(f'%{category}%'))
+            record_query: BaseQuery = base_query.filter(
+                Categories.name.ilike(f"%{category}%")
+            )
 
             record = record_query.first_or_404(description="id not found")
 
-            r = {"name": record.name,
-                "products": record.products}
+            r = {"name": record.name, "products": record.products}
 
             return jsonify(r), HTTPStatus.OK
-        
-        product_name = request.args.get('name')
-    
+
+        product_name = request.args.get("name")
+
         if product_name:
-         
+
             base_query: Query = db.session.query(Products)
 
-            record_query: BaseQuery = base_query.filter(Products.name.ilike(f'%{product_name}%'))
+            record_query: BaseQuery = base_query.filter(
+                Products.name.ilike(f"%{product_name}%")
+            )
 
             record = record_query.first_or_404(description="id not found")
 
             r = {"name": record.name}
 
             return jsonify(r), HTTPStatus.OK
-           
+
         base_query: Query = db.session.query(Products)
         records = base_query.all()
 
@@ -149,8 +160,10 @@ def retrieve_products_by_id(id):
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
 
+@jwt_required()
 def update_product(id):
     try:
+        verify_admin_access()
         data = request.get_json()
 
         session: Session = db.session
@@ -166,7 +179,10 @@ def update_product(id):
         session.commit()
 
         return jsonify(record), HTTPStatus.OK
-
+    
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+    
     except DataError as e:
 
         if isinstance(e.orig, InvalidTextRepresentation):
@@ -174,9 +190,10 @@ def update_product(id):
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
 
-
+@jwt_required()
 def delete_product(id):
     try:
+        verify_admin_access()
         session: Session = db.session
 
         record = session.query(Products).get(id)
@@ -188,7 +205,10 @@ def delete_product(id):
         session.commit()
 
         return "", HTTPStatus.NO_CONTENT
-
+    
+    except UnauthorizedError as e:
+        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+    
     except DataError as e:
 
         if isinstance(e.orig, InvalidTextRepresentation):
