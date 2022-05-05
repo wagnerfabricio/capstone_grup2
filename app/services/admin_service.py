@@ -10,6 +10,9 @@ load_dotenv()
 def verify_admin_access():
     admin: UserModel = UserModel.query.filter_by(email=get_jwt_identity()["email"]).first()
 
+    if not admin:
+        raise UnauthorizedError("you are not authorized to access this page")
+
     if not str(admin.user_class) == getenv("ADMIN_CLASS_ID"):
         raise UnauthorizedError("you are not authorized to access this page")
 

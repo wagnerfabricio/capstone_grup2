@@ -1,7 +1,11 @@
+from dataclasses import asdict
 from datetime import datetime as dt
 from http import HTTPStatus
 from flask import jsonify, request
+from app.controllers.payment_controller import create_payment
 from app.models import Order, OrderProduct, OrderStatus, OrderPayment, OrderRating
+from app.models.user_model import UserModel
+from app.models.products_model import Products
 from app.services import (
     retrieve,
     retrieve_by_id,
@@ -40,7 +44,7 @@ def create_order():
                 .replace("\n", "")
             }, HTTPStatus.CONFLICT
 
-        return e.args[0]
+        return e.args[0], HTTPStatus.BAD_REQUEST
 
     for product in list_products:
         new_data = {
@@ -52,8 +56,51 @@ def create_order():
         db.session.add(order_product)
         db.session.commit()
 
-    order_detail = retrieve_orders_detail(new_order.id)
-    return jsonify(order_detail), HTTPStatus.CREATED
+    payment_method = create_payment(new_order.id)
+
+    # order_detail = retrieve_orders_detail(new_order.id)
+
+    user = UserModel.query.get(data["user_id"])
+
+    user_address = user.addresses[-1] if user.addresses else ""
+    user_address = asdict(user_address) if user_address else ""
+
+    order_status = OrderStatus.query.get(new_order.status_id).type
+
+    order_products = OrderProduct.query.filter_by(order_id=new_order.id).all()
+
+    products_list = [
+        Products.query.get(product.product_id) for product in order_products
+    ]
+
+    result = {
+        "user": {
+            "email": user.email,
+            "name": user.name,
+            "id": str(user.id),
+            "admin": bool(user.user_class),
+            "address": f'{user_address.get("street")}, {user_address.get("number")}, Bairro: {user_address.get("district")}, Cidade: {user_address.get("city")}/{user_address.get("state")} - CEP: {user_address.get("cep")}'
+            if type(user_address) is dict
+            else "",
+        },
+        "id": str(new_order.id),
+        "price": new_order.total,
+        "payment": payment_method.type,
+        "status": order_status,
+        "detail": [
+            {
+                "id": str(product.id),
+                "name": product.name,
+                "description": product.description,
+                "userId": str(user.id)
+            }
+            for product in products_list
+        ],
+    }
+
+    return result, HTTPStatus.CREATED
+
+    # return jsonify(order_detail), HTTPStatus.CREATED
 
 
 def retrieve_orders():

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from os import getenv
 from uuid import uuid4
 
 from datetime import datetime as dt
@@ -13,9 +14,9 @@ from sqlalchemy.orm import relationship, backref
 class Order(db.Model):
     id: str
     status: dict
-    # date: str
-    # subtotal: float
-    # total: float
+    date: str
+    subtotal: float
+    total: float
 
     __tablename__ = "orders"
 
@@ -26,20 +27,13 @@ class Order(db.Model):
     subtotal = Column(Numeric(asdecimal=False))
     total = Column(Numeric(asdecimal=False))
 
-    status_id = Column(
-        UUID(as_uuid=True), ForeignKey("orders_status.id"), nullable=False
-        
-        
-    )
-   
-    rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"))
-    payment_id = Column(
-        UUID(as_uuid=True), ForeignKey("orders_payments.id"), nullable=False
-    )
+    status_id = Column(UUID(as_uuid=True), ForeignKey("orders_status.id"), default=getenv('DEFAULT_ORDER_STATUS'))
 
-    user = relationship(
-        "UserModel", backref=backref("orders", uselist=True), uselist=False
-    )
+    rating_id = Column(UUID(as_uuid=True), ForeignKey("orders_ratings.id"))
+    payment_id = Column(UUID(as_uuid=True), ForeignKey("orders_payments.id"))
+
+    user = relationship("UserModel", backref=backref("orders", uselist=True), uselist=False)
     status = relationship("OrderStatus", uselist=False)
     rating = relationship("OrderRating", uselist=False)
     payment = relationship("OrderPayment", uselist=False)
+    new_payment = relationship("PaymentModel", backref=backref("orders", uselist=False), uselist=False)

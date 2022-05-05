@@ -1,5 +1,6 @@
 from dataclasses import asdict
 from http import HTTPStatus
+from uuid import uuid4
 from flask import jsonify, request
 from dotenv import load_dotenv
 from os import getenv
@@ -44,6 +45,14 @@ def mercado_pago_listener():
     except IntegrityError as e:
         if isinstance(e.orig, UniqueViolation):
             return {"error": "payment already exists!"}
+
+
+def create_payment(order_id: uuid4):
+    new_payment = PaymentModel(order_id=order_id)
+    db.session.add(new_payment)
+    db.session.commit()
+
+    return new_payment
 
 
 def retrieve_payments():

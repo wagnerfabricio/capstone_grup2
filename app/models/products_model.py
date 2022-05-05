@@ -26,8 +26,9 @@ class Products(db.Model):
     name = Column(String(50), unique=True, nullable=False)
     description = Column(String)
     price = Column(Numeric(asdecimal=False), nullable=False)
-    active = Column(Boolean)
+    active = Column(Boolean, default=True)
     qtt_stock = Column(Integer)
+    quantityStock = Column(Integer, default=0)
     img = Column(String, default="https://www.food4fuel.com/wp-content/uploads/woocommerce-placeholder-600x600.png")
 
     category_id = db.Column(UUID(as_uuid=True), db.ForeignKey("categories.id"))

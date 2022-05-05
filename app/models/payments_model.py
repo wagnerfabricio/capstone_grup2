@@ -11,6 +11,8 @@ class PaymentModel(db.Model):
     mercadopago_id: str
     mercadopago_type: str
 
+    __tablename__ = "payments"
+
     money_status = ["Aguardando Pagamento", ""]
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -18,4 +20,5 @@ class PaymentModel(db.Model):
     status = db.Column(db.String(50), default='Aguardando Pagamento')
     mercadopago_id = db.Column(db.String(60), unique=True)
     mercadopago_type = db.Column(db.String(50))
+    order_id = db.Column(UUID(as_uuid=True), db.ForeignKey("orders.id"))
     

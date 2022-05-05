@@ -22,13 +22,10 @@ def create_products():
             "name",
             "description",
             "price",
-            "active",
-            "qtt_stock",
             "category",
         }
 
         missing_keys = products_columns - data_keys
-      
         if missing_keys:
             return {
                 "error": "missing keys",
@@ -39,15 +36,12 @@ def create_products():
 
         if type(data["name"]) == str and type(data["description"]) == str:
 
-            if type(data["active"]) != bool:
-                return {"error": "active must be bool."}, HTTPStatus.BAD_REQUEST
-
             if type(data["price"]) != int and type(data["price"]) != float:
                 return {
                     "error": "price must be a numeric value."
                 }, HTTPStatus.BAD_REQUEST
 
-            if type(data["qtt_stock"]) != int:
+            if data.get('qtt_stock') and type(data.get("qtt_stock")) != int:
                 return {
                     "error": "qtt_stock must be a integer value."
                 }, HTTPStatus.BAD_REQUEST
