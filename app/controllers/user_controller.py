@@ -141,7 +141,7 @@ def update_user():
     current_app.db.session.add(user)
     current_app.db.session.commit()
 
-    return "", HTTPStatus.OK
+    return jsonify(user), HTTPStatus.OK
 
 
 @jwt_required()
