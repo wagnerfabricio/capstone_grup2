@@ -1,6 +1,7 @@
 from dataclasses import asdict
 from datetime import datetime as dt
 from http import HTTPStatus
+import re
 
 
 from flask import jsonify, request
@@ -48,7 +49,10 @@ from app.services import (
     validate_keys_update,
 )
 from app.services.admin_service import verify_admin_access
-from app.services.order_service import retrieve_orders_admin, retrieve_orders_detail_user
+from app.services.order_service import (
+    retrieve_orders_admin,
+    retrieve_orders_detail_user,
+)
 
 
 @jwt_required()
@@ -63,6 +67,10 @@ def create_order():
         return {"error": "user id not found"}, HTTPStatus.NOT_FOUND
 
     cart = Cart.query.filter(Cart.user_id == user.id).first()
+
+    if not cart:
+        return {"error": "cart is empty"}, HTTPStatus.BAD_REQUEST
+
     total = (
         session.query(func.sum(Products.price))
         .select_from(CartProducts)
@@ -176,18 +184,46 @@ def create_order():
     return result, HTTPStatus.CREATED
 
 
-@jwt_required()
+# @jwt_required()
 def retrieve_orders():
-    try:
-        verify_admin_access()
-        list_orders = retrieve_orders_user()
-    except UnauthorizedError as e:
-        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
-    return jsonify(list_orders), HTTPStatus.OK
+    # try:
+    # verify_admin_access()
+    list_orders = retrieve_orders_user()
+
+    result = []
+    for order in list_orders:
+        order_id = str(order.get('id'))
+        order_info = retrieve_orders_detail(order_id)
+        order_info['payment'] = asdict(PaymentModel.query.filter_by(order_id=order_id).first())
+
+        if order_info:
+            result.append(order_info)
+
+    # except UnauthorizedError as e:
+    #     return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+
+    # return jsonify(result), HTTPStatus.OK
+
+    return jsonify(
+        [{
+            "user":{
+                "email": order.get('email'),
+                "name": order.get('name'),
+                "id": order.get('user_id'),
+                "address": "",
+            },
+            "id": order.get('id'),
+            "price": order.get('total'),
+            "payment": order['payment']['type'],
+            "status": order.get('status'),
+            "details": order.get('products')
+        } for order in result]
+    ), HTTPStatus.OK
 
 
 def retrieve_order_by_id(id: int):
-    response = retrieve_orders_detail_user(id)
+    # response = retrieve_orders_detail_user(id)
+    response = retrieve_orders_detail(id)
 
     if not response:
         return {"error": f"id {id} not found!"}, HTTPStatus.NOT_FOUND
@@ -195,26 +231,19 @@ def retrieve_order_by_id(id: int):
     payment = PaymentModel.query.filter_by(order_id=id).first()
 
     payment = asdict(payment)
-    print("=" * 100)
-    print(payment)
-    print("=" * 100)
 
     if payment.get("mercadopago_id"):
-        return jsonify(response, {"payment_info": payment}), HTTPStatus.OK
+        payment.pop("order_id")
+        response["payment_info"] = payment
 
-    return (
-        jsonify(
-            response,
-            {
-                "payment_info": {
-                    "id": payment.get("id"),
-                    "type": payment.get("type"),
-                    "status": payment.get("status"),
-                }
-            },
-        ),
-        HTTPStatus.OK,
-    )
+        return jsonify(response), HTTPStatus.OK
+
+    payment.pop("mercadopago_id")
+    payment.pop("mercadopago_type")
+
+    response["payment_info"] = payment
+
+    return jsonify(response), HTTPStatus.OK
 
 
 def delete_order(order_id):

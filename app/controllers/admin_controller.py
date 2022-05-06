@@ -1,8 +1,10 @@
+from dataclasses import asdict
 from http import HTTPStatus
 from flask import current_app, jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from app.models.addresses_model import AddressesModel
 from app.models.exception_model import UnauthorizedError
+from app.models.payments_model import PaymentModel
 from app.models.user_model import UserModel
 from app.models.user_class_model import UserClassModel
 from os import getenv
@@ -115,6 +117,17 @@ def retrieve_orders():
         verify_admin_access()
         orders = retrieve_orders_admin()
 
+        for order in orders:
+            order_id = str(order.get('id'))
+            payment = PaymentModel.query.filter_by(order_id=order_id).first()
+
+
+            order['payment_info'] = payment
+            
+            print('='*100)
+            print(payment)
+            print('='*100)
+
         return jsonify(orders), HTTPStatus.OK
     except UnauthorizedError as e:
         return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
@@ -126,6 +139,22 @@ def retrieve_order_detail(order_id: int):
     try:
         verify_admin_access()
         order = retrieve_orders_detail(order_id)
+
+        payment = PaymentModel.query.filter_by(order_id=order.get('id')).first()
+
+        payment = asdict(payment)
+
+        if payment.get("mercadopago_id"):
+            payment.pop("order_id")
+            order["payment_info"] = payment
+
+            return jsonify(order), HTTPStatus.OK
+
+        payment.pop("mercadopago_id")
+        payment.pop("mercadopago_type")
+
+        order["payment_info"] = payment
+
         return jsonify(order), HTTPStatus.OK
     except UnauthorizedError as e:
         return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED

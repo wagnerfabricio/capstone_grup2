@@ -121,7 +121,7 @@ def retrieve_user():
             "birthday": user.birthday,
             "addresses": user.addresses,
         }
-    )
+    ), HTTPStatus.OK
 
 
 @jwt_required()
@@ -141,7 +141,15 @@ def update_user():
     current_app.db.session.add(user)
     current_app.db.session.commit()
 
-    return "", HTTPStatus.OK
+    return jsonify(
+        {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "birthday": user.birthday,
+            "addresses": user.addresses,
+        }
+    ), HTTPStatus.OK
 
 
 @jwt_required()
