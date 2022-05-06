@@ -7,7 +7,7 @@ Api com rotas para controle de um sushi/restaurante com banco de dados em Posgre
 Url base dessa API é:
 desenvolvimento: 
 
-- **localhost:5000/**
+- **https://sushizera-capstone.herokuapp.com/**
 
 produção: 
 
