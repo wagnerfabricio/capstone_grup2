@@ -176,13 +176,13 @@ def create_order():
     return result, HTTPStatus.CREATED
 
 
-@jwt_required()
+# @jwt_required()
 def retrieve_orders():
-    try:
-        verify_admin_access()
-        list_orders = retrieve_orders_user()
-    except UnauthorizedError as e:
-        return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
+    # try:
+        # verify_admin_access()
+    list_orders = retrieve_orders_user()
+    # except UnauthorizedError as e:
+    #     return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
     return jsonify(list_orders), HTTPStatus.OK
 
 
