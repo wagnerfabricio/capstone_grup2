@@ -24,4 +24,4 @@ class OrderStatus(db.Model):
         if type(field) != str:
             raise TypeFieldError("string", key)
 
-        return field.title()
+        return field.capitalize()

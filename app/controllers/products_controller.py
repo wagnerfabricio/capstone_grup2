@@ -82,61 +82,64 @@ def create_products():
 
 
 def retrieve_products():
-    try:
-        category = request.args.get("category")
+    # try:
+    category = request.args.get("category")
 
-        if category:
+    if category:
 
-            base_query: Query = db.session.query(Categories)
+        base_query: Query = db.session.query(Categories)
 
-            record_query: BaseQuery = base_query.filter(
-                Categories.name.ilike(f"%{category}%")
-            )
+        record_query: BaseQuery = base_query.filter(
+            Categories.name.ilike(f"%{category}%")
+        )
 
-            record = record_query.first_or_404(description="id not found")
+        record = record_query.first_or_404(description="id not found")
 
-            r = {"name": record.name, "products": record.products}
+        r = {"name": record.name, "products": record.products}
 
-            return jsonify(r), HTTPStatus.OK
+        return jsonify(r), HTTPStatus.OK
 
-        product_name = request.args.get("name")
+    product_name = request.args.get("name")
 
-        if product_name:
-
-            base_query: Query = db.session.query(Products)
-
-            record_query: BaseQuery = base_query.filter(
-                Products.name.ilike(f"%{product_name}%")
-            )
-
-            record = record_query.first_or_404(description="id not found")
-
-            r = {"name": record.name}
-
-            return jsonify(r), HTTPStatus.OK
+    if product_name:
 
         base_query: Query = db.session.query(Products)
-        records = base_query.all()
 
-        return (
-            jsonify(
-                [
-                    {
-                        "id": product.id,
-                        "name": product.name,
-                        "price": product.price,
-                        "category": product.category.name,
-                        "description": product.description,
-                        "quantityStock": product.qtt_stock,
-                        "img": product.img,
-                    }
-                    for product in records
-                ]
-            ),
-            HTTPStatus.OK,
+        record_query: BaseQuery = base_query.filter(
+            Products.name.ilike(f"%{product_name}%")
         )
-    except Exception as error:
-        return {"error": "no data found"}, HTTPStatus.NOT_FOUND
+
+        record = record_query.first_or_404(description="id not found")
+
+        r = {"name": record.name}
+
+        return jsonify(r), HTTPStatus.OK
+
+    base_query: Query = db.session.query(Products)
+    print("RECORDS", base_query)
+    records = base_query.all()
+    return (
+        jsonify(
+            [
+                {
+                    "id": product.id,
+                    "name": product.name,
+                    "price": product.price,
+                    "category": product.category.name,
+                    "description": product.description,
+                    "quantityStock": product.qtt_stock,
+                    "img": product.img,
+                }
+                for product in records
+            ]
+        ),
+        HTTPStatus.OK,
+    )
+
+
+# except Exception as error:
+
+# return {"error": "no data found"}, HTTPStatus.NOT_FOUND
 
 
 def retrieve_products_by_id(id):
@@ -179,16 +182,17 @@ def update_product(id):
         session.commit()
 
         return jsonify(record), HTTPStatus.OK
-    
+
     except UnauthorizedError as e:
         return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
-    
+
     except DataError as e:
 
         if isinstance(e.orig, InvalidTextRepresentation):
             return {"error": "product does not exists"}, HTTPStatus.NOT_FOUND
 
         return {"error": e.args[0]}, HTTPStatus.NOT_FOUND
+
 
 @jwt_required()
 def delete_product(id):
@@ -205,10 +209,10 @@ def delete_product(id):
         session.commit()
 
         return "", HTTPStatus.NO_CONTENT
-    
+
     except UnauthorizedError as e:
         return {"error": e.args[0]}, HTTPStatus.UNAUTHORIZED
-    
+
     except DataError as e:
 
         if isinstance(e.orig, InvalidTextRepresentation):

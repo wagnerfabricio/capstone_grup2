@@ -202,7 +202,7 @@ def validate_payment_keys(data_keys):
 
 
 def validate_status_keys(data_keys):
-    valid_keys = ["status"]
+    valid_keys = ["type"]
 
     wrong_keys = [key for key in data_keys if key not in valid_keys]
 
