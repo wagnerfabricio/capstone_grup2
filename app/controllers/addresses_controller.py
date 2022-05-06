@@ -8,6 +8,8 @@ from app.configs.database import db
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+from json.decoder import JSONDecodeError
+
 from app.models.user_model import UserModel
 
 
@@ -91,6 +93,19 @@ def create_address():
 
     except TypeError:
         return jsonify({"error": "wrong type"}), HTTPStatus.BAD_REQUEST
+
+
+def check_cep(cep_number):
+    try:
+        cep = verify_cep(cep_number)
+
+        if cep.get('erro'):
+            return {"error": "invalid cep address"}, HTTPStatus.BAD_REQUEST
+        
+        return cep, HTTPStatus.OK
+    except JSONDecodeError:
+        return {"error": "invalid cep address"}, HTTPStatus.BAD_REQUEST
+
 
 
 def verify_cep(number):

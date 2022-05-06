@@ -40,6 +40,7 @@ def retrieve_orders_detail(id):
 
     user_query: Query = (
         session.query(
+            UserModel.id.label("user_id"),
             UserModel.name,
             UserModel.email,
             Order.id,
